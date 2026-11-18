@@ -11,12 +11,12 @@ shemo iz `migrations/0001_sobe.sql`; njen ID je vpisan v `wrangler.toml`.
 1. V nadzorni plošči Cloudflare odpri **Workers & Pages → Create → Import a repository**.
 2. Poveži GitHub in izberi repozitorij `letnica-si`.
 3. Nastavitve gradnje:
-   - **Project name:** `casolov` (mora se ujemati z `name` v `wrangler.toml`)
+   - **Project name:** `letnica-si` (mora se ujemati z `name` v `wrangler.toml`)
    - **Production branch:** veja, na kateri je ta koda (npr. `main` po združitvi)
    - **Build command:** pusti prazno
    - **Deploy command:** `npx wrangler deploy`
    - **Root directory:** `/`
-4. Klikni **Save and Deploy**. Igra bo dosegljiva na `https://casolov.<tvoj-podracun>.workers.dev`.
+4. Klikni **Save and Deploy**. Igra bo dosegljiva na `https://letnica-si.<tvoj-podracun>.workers.dev`.
 
 Vsak nov commit na izbrani veji se nato namesti sam.
 
