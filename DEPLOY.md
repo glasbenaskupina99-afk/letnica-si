@@ -18,7 +18,9 @@ shemo iz `migrations/0001_sobe.sql`; njen ID je vpisan v `wrangler.toml`.
    - **Root directory:** `/`
 4. Klikni **Save and Deploy**. Igra bo dosegljiva na `https://letnica-si.<tvoj-podracun>.workers.dev`.
 
-Vsak nov commit na izbrani veji se nato namesti sam.
+Vsak nov commit na izbrani veji se nato namesti sam. Če vejo zamenjaš pozneje
+(**Settings → Builds → Production branch**), se nova gradnja zažene ob prvem
+naslednjem commitu na tej veji.
 
 ## Možnost 2: ročna namestitev z računalnika
 
