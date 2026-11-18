@@ -3,7 +3,7 @@
 // ============================================================================
 
 const STORAGE_KEY = "letnica_si_state_v2";
-const ROUND_TIME_LIMIT_MS = 20000; // 20 sekund na vprašanje
+const ROUND_TIME_LIMIT_MS = 25000; // 25 sekund na vprašanje
 
 const state = {
   theme: "dark",
@@ -18,7 +18,7 @@ const state = {
   freeplay: null, // { date, count } — odigrane proste igre na današnji dan
   journeyYear: 0,
 
-  // 20-sekundni odštevalnik
+  // 25-sekundni odštevalnik
   timerInterval: null,
   roundDeadline: 0,
 
@@ -86,7 +86,12 @@ function getFreeplayEvents() {
     const pool = SLOVENIAN_EVENTS.filter((e) => e.era === eraId && !reserved.has(e.id));
     chosen.push(pool[Math.floor(Math.random() * pool.length)]);
   }
-  return chosen.sort((a, b) => a.year - b.year);
+  // Obdobja v naključnem vrstnem redu
+  for (let i = chosen.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chosen[i], chosen[j]] = [chosen[j], chosen[i]];
+  }
+  return chosen;
 }
 
 function freeplayPlayedToday() {
@@ -177,7 +182,7 @@ function pruneDailyHistory() {
     let valid = key >= epochKey && entry && Array.isArray(entry.guesses) && entry.guesses.length === 5;
     if (valid) {
       const ids = getDailyEventsForDateKey(key).map((e) => e.id);
-      valid = entry.guesses.every((g, i) => g.eventId === ids[i]);
+      valid = entry.guesses.every((g) => ids.includes(g.eventId));
     }
     if (!valid) {
       delete state.dailyHistory[key];
@@ -368,7 +373,7 @@ function startFreeplayGame() {
 }
 
 // ============================================================================
-// 20-SEKUNDNI ODŠTEVALNIK ZA VSAKO VPRAŠANJE
+// 25-SEKUNDNI ODŠTEVALNIK ZA VSAKO VPRAŠANJE
 // ============================================================================
 function stopRoundTimer() {
   if (state.timerInterval) {
@@ -390,7 +395,7 @@ function startRoundTimer() {
   timerCard.style.display = "";
   displayEl.className = "timer-Display";
   fillEl.className = "timer-progress-fill";
-  displayEl.textContent = "20.0 s";
+  displayEl.textContent = `${(ROUND_TIME_LIMIT_MS / 1000).toFixed(1)} s`;
   fillEl.style.width = "100%";
 
   state.roundDeadline = performance.now() + ROUND_TIME_LIMIT_MS;
@@ -716,7 +721,7 @@ function revealRoundResult(guessRecord, ev, prevYear, newJourneyYear, roundIdx) 
 
   if (guessRecord.timedOut) {
     jsbIcon.textContent = "⏰";
-    jsbTitle.textContent = "Čas (20 s) je potekel — motor časoplova je ugasnil!";
+    jsbTitle.textContent = "Čas (25 s) je potekel — motor časoplova je ugasnil!";
     jsbSub.textContent = `Časoplov ostaja v letu ${newJourneyYear} (+0 let premika · 0 točk)`;
   } else if (guessRecord.diff === 0) {
     jsbIcon.textContent = "⚡";
@@ -757,7 +762,7 @@ function revealRoundResult(guessRecord, ev, prevYear, newJourneyYear, roundIdx) 
   const vtLegendBox = document.getElementById("vt-legend-box");
 
   if (guessRecord.timedOut) {
-    diffBanner.textContent = "⏰ Poteklo je 20 sekund brez oddanega odgovora (0 točk).";
+    diffBanner.textContent = "⏰ Poteklo je 25 sekund brez oddanega odgovora (0 točk).";
     diffBanner.style.color = "var(--accent-red)";
     vtCompareBox.style.display = "none";
     vtLegendBox.style.display = "none";
@@ -1042,7 +1047,7 @@ function renderSummary() {
     row.className = `summary-round-item ${g.timedOut ? "tier-timeout" : g.tier || ""}`;
     row.style.animationDelay = `${0.25 + idx * 0.09}s`;
     const userText = g.timedOut
-      ? "⏰ Potekel čas (20 s)"
+      ? "⏰ Potekel čas (25 s)"
       : `Tvoj vnos: <strong>${g.guessYear}</strong> (${g.diff === 0 ? "Zlati polet!" : "±" + g.diff + " " + formatYearsWord(g.diff)})`;
 
     row.innerHTML = `

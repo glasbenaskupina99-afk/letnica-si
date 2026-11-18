@@ -112,7 +112,25 @@ function getDailyEventsForDateKey(dateKey) {
     chosen.push(pool[order[pos]]);
   }
 
-  return chosen.sort((a, b) => a.year - b.year);
+  return orderDailyEvents(dateKey, chosen);
+}
+
+// Od tega dne naprej so obdobja v dnevnem izzivu premešana (prej kronološko).
+// Starejši dnevi ostanejo nespremenjeni, da shranjeni rezultati veljajo naprej.
+const MIXED_ORDER_FROM = "2026-11-20";
+
+function orderDailyEvents(dateKey, events) {
+  const sorted = events.slice().sort((a, b) => a.year - b.year);
+  if (dateKey < MIXED_ORDER_FROM) return sorted;
+  const rng = seededRandom(hashString(`CASOLOV_ORDER_${dateKey}`));
+  const mixed = sorted.slice();
+  for (let i = mixed.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [mixed[i], mixed[j]] = [mixed[j], mixed[i]];
+  }
+  // Nikoli povsem kronološko: v tem primeru zamaknemo vrstni red
+  if (mixed.every((e, i) => e === sorted[i])) mixed.push(mixed.shift());
+  return mixed;
 }
 
 // ============================================================================
