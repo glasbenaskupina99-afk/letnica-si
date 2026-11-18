@@ -1099,7 +1099,7 @@ function buildShareText() {
     })
     .join("\n");
 
-  return `${headerTitle}\n🛸 Časoplov je priletel do: Leto ${reachedYear} / 2026 (${totalScore} tč)\n${emojiRow}\n\n${detailRows}`;
+  return `${headerTitle}\n🛸 Časoplov je priletel do: Leto ${reachedYear} / 2026 (${totalScore} tč)\n${emojiRow}\n\n${detailRows}\n\nhttps://casolov.si`;
 }
 
 function flashButtonLabel(btnId, text) {
@@ -1314,7 +1314,7 @@ async function renderShareImage() {
 
   ctx.fillStyle = "#fcd770";
   ctx.font = 'italic 700 40px "Fraunces", Georgia, serif';
-  ctx.fillText("Poleti tudi ti — igraj Časolov", W / 2, 1275);
+  ctx.fillText("Poleti tudi ti → casolov.si", W / 2, 1275);
 
   return new Promise((resolve) => c.toBlob((blob) => resolve(blob), "image/png"));
 }
