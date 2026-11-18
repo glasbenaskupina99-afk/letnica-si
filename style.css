@@ -2423,6 +2423,111 @@ button {
   color: var(--text-3);
 }
 
+/* ==================== FINALE ==================== */
+.finale-strip {
+  display: none;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--gold-line);
+  box-shadow: var(--shadow-md), 0 0 30px -10px color-mix(in srgb, var(--gold) 50%, transparent);
+}
+
+.finale-strip.visible {
+  display: block;
+  animation: cardEnter 0.45s var(--ease-out);
+}
+
+.finale-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.finale-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.finale-skip {
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.finale-chips {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.fin-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text-3);
+  opacity: 0.45;
+  transform: scale(0.94);
+  transition: all 0.4s var(--ease-spring);
+}
+
+.fin-chip b {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.fin-chip i {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-chip.on {
+  opacity: 1;
+  transform: scale(1);
+  color: var(--text);
+}
+
+.fin-chip.on.tier-perfect { background: linear-gradient(135deg, rgba(253, 224, 71, 0.3), rgba(245, 158, 11, 0.15)); border-color: #fbbf24; box-shadow: 0 0 18px -4px rgba(251, 191, 36, 0.7); }
+.fin-chip.on.tier-great { background: var(--emerald-soft); border-color: var(--emerald); }
+.fin-chip.on.tier-good { background: var(--gold-soft); border-color: var(--gold-line); }
+.fin-chip.on.tier-ok { background: color-mix(in srgb, var(--orange) 12%, transparent); border-color: var(--orange); }
+.fin-chip.on.tier-miss,
+.fin-chip.on.tier-timeout { background: var(--red-soft); border-color: color-mix(in srgb, var(--red) 50%, transparent); }
+
+.btn-secondary-action.full {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.btn-share:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.countdown {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+  font-weight: 800;
+}
+
 /* ==================== 3. ARHIV ==================== */
 .archive-header-card {
   display: flex;

@@ -321,8 +321,18 @@ function updateTopbarStreak() {
 // ============================================================================
 // UPRAVLJANJE POGLEDOV (VSTOPNI MENI, IGRA, ARHIV)
 // ============================================================================
+function cancelFinaleSilently() {
+  if (!finale.active) return;
+  finale.active = false;
+  finale.done = null;
+  finale.timers.forEach(clearTimeout);
+  finale.timers = [];
+  document.getElementById("finale-strip").classList.remove("visible");
+}
+
 function showMenuView() {
   stopRoundTimer();
+  cancelFinaleSilently();
   state.view = "menu";
   document.body.dataset.era = "0";
 
@@ -361,6 +371,7 @@ function renderMenuDashboard() {
 
 function showArchiveView() {
   stopRoundTimer();
+  cancelFinaleSilently();
   state.view = "archive";
   document.body.dataset.era = "0";
 
@@ -383,6 +394,7 @@ function showGameView() {
 // ============================================================================
 function startDailyGame(dateKey = formatDateKey(new Date())) {
   stopRoundTimer();
+  cancelFinaleSilently();
   state.mode = "daily";
   state.activeDateKey = dateKey;
   state.activeDayNumber = getDayNumberFromDateKey(dateKey);
@@ -417,6 +429,7 @@ function startDailyGame(dateKey = formatDateKey(new Date())) {
 
 function startFreeplayGame() {
   stopRoundTimer();
+  cancelFinaleSilently();
   state.mode = "freeplay";
   state.activeDateKey = null;
   state.events = getFreeplayEvents(state.freeplayEra);
@@ -875,6 +888,10 @@ function revealRoundResult(guessRecord, ev, prevYear, newJourneyYear, roundIdx) 
 }
 
 function advanceToNextRound() {
+  if (finale.active) {
+    finishFinale(true);
+    return;
+  }
   if (!state.roundSubmitted) return;
 
   // Med poletom Enter / klik najprej preskoči animacijo
@@ -932,11 +949,120 @@ function finishGameSession() {
     }
   }
 
-  if (reachedYear >= 1800 && typeof confetti === "function") {
-    confetti({ particleCount: reachedYear === 2026 ? 150 : 75, spread: 70, origin: { y: 0.6 } });
+  playFinale(() => {
+    if (reachedYear >= 1800 && typeof confetti === "function") {
+      const gold = ["#fde68a", "#f5b942", "#ffffff", "#fcd770"];
+      confetti({ particleCount: reachedYear === 2026 ? 180 : 80, spread: 75, origin: { y: 0.55 }, colors: reachedYear === 2026 ? gold : undefined });
+    }
+    renderSummary();
+  });
+}
+
+// ============================================================================
+// VELIKI FINALE: ponovitev celotnega poleta krog za krogom
+// ============================================================================
+const finale = { active: false, timers: [], done: null, finalYear: 0 };
+
+function playFinale(onDone) {
+  const guesses = state.guesses.slice();
+  const finalYear = state.journeyYear;
+  if (!gameScene || PREFERS_REDUCED_MOTION || guesses.length !== 5) {
+    onDone();
+    return;
   }
 
-  renderSummary();
+  finale.active = true;
+  finale.done = onDone;
+  finale.finalYear = finalYear;
+  finale.timers = [];
+
+  document.getElementById("active-round-area").style.display = "none";
+  const strip = document.getElementById("finale-strip");
+  const chips = document.getElementById("finale-chips");
+  chips.innerHTML = guesses
+    .map((g, i) => `<span class="fin-chip" data-i="${i}"><b>${i + 1}</b><i>${g.timedOut ? "⏰" : g.diff === 0 ? "🎯" : "+" + (g.yearGain || 0)}</i></span>`)
+    .join("");
+  document.getElementById("finale-title").textContent = "Ponovitev tvojega poleta skozi čas";
+  strip.classList.add("visible");
+
+  const stage = document.getElementById("eraly-stage-card");
+  const top = stage.getBoundingClientRect().top;
+  if (top < 50 || top > window.innerHeight * 0.4) {
+    const topbarH = document.querySelector(".topbar")?.offsetHeight || 0;
+    window.scrollTo({ top: window.scrollY + top - topbarH - 10, behavior: "smooth" });
+  }
+
+  gameScene.setInstantYear(0, false);
+  let from = 0;
+  let i = 0;
+  const later = (fn, ms) => finale.timers.push(setTimeout(fn, ms));
+
+  const nextLeg = () => {
+    if (!finale.active) return;
+    if (i >= guesses.length) {
+      finishFinale(false);
+      return;
+    }
+    const g = guesses[i];
+    const to = typeof g.targetYearAfter === "number" ? g.targetYearAfter : from;
+    const gain = Math.max(0, to - from);
+    const chip = chips.querySelector(`[data-i="${i}"]`);
+    if (chip) chip.classList.add("on", g.timedOut ? "tier-timeout" : g.tier);
+
+    gameScene.triggerFlight(
+      from,
+      to,
+      {
+        isExact: !g.timedOut && g.diff === 0,
+        isTimeout: g.timedOut,
+        duration: gain > 0 ? 1050 + Math.min(gain, 700) * 1.1 : 650
+      },
+      () => later(nextLeg, 260)
+    );
+    const badge = document.getElementById("fco-badge");
+    if (badge) {
+      badge.textContent = `Krog ${i + 1} · ${g.timedOut ? "čas je potekel" : g.diff === 0 ? "zlati polet" : "±" + g.diff + " " + formatYearsWord(g.diff)}`;
+    }
+    from = to;
+    i++;
+  };
+  later(nextLeg, 450);
+}
+
+function finishFinale(skipped) {
+  if (!finale.active) return;
+  finale.active = false;
+  finale.timers.forEach(clearTimeout);
+  finale.timers = [];
+  const golden = finale.finalYear === 2026;
+
+  if (skipped && gameScene) gameScene.setInstantYear(finale.finalYear, golden);
+
+  if (audio) audio.finale(golden);
+  if (golden && gameScene && !skipped) {
+    gameScene.goldenTarget = 1;
+    gameScene.flash = 0.9;
+    gameScene.flashColor = [255, 226, 140];
+    gameScene.shake = 1;
+    const badge = document.getElementById("fco-badge");
+    const overlay = document.getElementById("flight-cinematic-overlay");
+    if (badge && overlay) {
+      badge.textContent = "👑 Pristanek v sedanjosti";
+      overlay.classList.add("visible", "kind-golden");
+      setTimeout(() => overlay.classList.remove("visible"), 1800);
+    }
+  }
+
+  document.getElementById("finale-title").textContent = golden ? "Pristal si v letu 2026!" : "Pristanek";
+  const done = finale.done;
+  finale.done = null;
+  setTimeout(
+    () => {
+      document.getElementById("finale-strip").classList.remove("visible");
+      if (done) done();
+    },
+    skipped ? 0 : golden ? 1100 : 500
+  );
 }
 
 function renderSummary() {
@@ -982,17 +1108,43 @@ function renderSummary() {
   });
 
   const timerEl = document.getElementById("next-daily-timer");
-  if (state.mode === "daily") {
-    timerEl.textContent = "Nov dnevni izziv bo na voljo ob polnoči.";
-  } else {
-    timerEl.textContent = "V Prosti igri lahko takoj poletiš znova!";
+  timerEl.dataset.mode = state.mode;
+  if (state.mode !== "daily") {
+    timerEl.textContent = "V prosti igri lahko takoj poletiš znova!";
   }
+  updateCountdowns();
 }
 
 // ============================================================================
-// DELJENJE REZULTATA V ODLOŽIŠČE
+// ODŠTEVANJE DO NASLEDNJEGA DNEVNEGA IZZIVA (polnoč po lokalnem času)
 // ============================================================================
-function shareResultToClipboard() {
+function formatCountdown() {
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const total = Math.max(0, Math.floor((next - now) / 1000));
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
+}
+
+function updateCountdowns() {
+  const cd = formatCountdown();
+  const timerEl = document.getElementById("next-daily-timer");
+  if (timerEl && timerEl.dataset.mode === "daily") {
+    timerEl.innerHTML = `Nov dnevni izziv čez <strong class="countdown">${cd}</strong>`;
+  }
+  const todayKey = formatDateKey(new Date());
+  const tag = document.getElementById("menu-daily-status-tag");
+  if (tag && state.dailyHistory[todayKey]) {
+    tag.textContent = `ODIGRANO · NOV IZZIV ČEZ ${cd}`;
+  }
+  // ob polnoči osveži meni (nov izziv)
+  if (cd === "00:00:00" && state.view === "menu") setTimeout(renderMenuDashboard, 1200);
+}
+
+// ============================================================================
+// DELJENJE REZULTATA: besedilo in slika (PNG, 1080 × 1350)
+// ============================================================================
+function buildShareText() {
   const totalScore = state.guesses.reduce((sum, g) => sum + g.points, 0);
   const reachedYear = state.journeyYear;
   const headerTitle =
@@ -1008,16 +1160,258 @@ function shareResultToClipboard() {
     })
     .join("\n");
 
-  const shareText = `${headerTitle}\n🛸 Časoplov je priletel do: Leto ${reachedYear} / 2026 (${totalScore} tč)\n${emojiRow}\n\n${detailRows}`;
+  return `${headerTitle}\n🛸 Časoplov je priletel do: Leto ${reachedYear} / 2026 (${totalScore} tč)\n${emojiRow}\n\n${detailRows}`;
+}
 
-  navigator.clipboard.writeText(shareText).then(() => {
-    const label = document.querySelector("#btn-share-result .btn-label");
-    const orig = label.textContent;
-    label.textContent = "Skopirano v odložišče ✓";
-    setTimeout(() => {
-      label.textContent = orig;
-    }, 2200);
+function flashButtonLabel(btnId, text) {
+  const label = document.querySelector(`#${btnId} .btn-label`);
+  if (!label) return;
+  const orig = label.dataset.orig || label.textContent;
+  label.dataset.orig = orig;
+  label.textContent = text;
+  clearTimeout(label._t);
+  label._t = setTimeout(() => {
+    label.textContent = orig;
+  }, 2200);
+}
+
+function shareResultToClipboard() {
+  const text = buildShareText();
+  const done = () => flashButtonLabel("btn-copy-result", "Skopirano ✓");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, () => flashButtonLabel("btn-copy-result", "Kopiranje ni uspelo"));
+  }
+}
+
+const TIER_COLORS = {
+  "tier-perfect": ["#fde047", "#f59e0b"],
+  "tier-great": ["#6ee7b7", "#10b981"],
+  "tier-good": ["#fde68a", "#eab308"],
+  "tier-ok": ["#fdba74", "#f97316"],
+  "tier-miss": ["#fca5a5", "#ef4444"],
+  "tier-timeout": ["#94a3b8", "#475569"]
+};
+
+async function renderShareImage() {
+  const W = 1080;
+  const H = 1350;
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const ctx = c.getContext("2d");
+  const reached = state.journeyYear;
+  const golden = reached === 2026;
+  const totalScore = state.guesses.reduce((sum, g) => sum + g.points, 0);
+
+  try {
+    await Promise.all([
+      document.fonts.load('900 200px "Fraunces"'),
+      document.fonts.load('italic 700 60px "Fraunces"'),
+      document.fonts.load('800 40px "Inter"')
+    ]);
+  } catch (e) {
+    /* nadomestne pisave */
+  }
+
+  // Nebo v barvah doseženega obdobja (isti izračun kot na odru)
+  const skyFx = new EralySceneRenderer("__share__", true);
+  skyFx.goldenGlow = golden ? 1 : 0;
+  const sky = skyFx.getSky(reached);
+  const rgb = (a, al = 1) => `rgba(${a[0] | 0},${a[1] | 0},${a[2] | 0},${al})`;
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, rgb(sky.top));
+  grad.addColorStop(0.55, rgb(sky.mid));
+  grad.addColorStop(0.85, rgb(sky.bot));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Zvezde (deterministično, da je slika vedno enaka)
+  const rnd = seededRandom(hashString("share" + reached));
+  for (let i = 0; i < 90; i++) {
+    ctx.fillStyle = `rgba(255,255,255,${0.15 + rnd() * 0.5})`;
+    ctx.beginPath();
+    ctx.arc(rnd() * W, rnd() * H * 0.5, 0.8 + rnd() * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Sonce
+  const sx = W * 0.8;
+  const sy = H * 0.2;
+  const halo = ctx.createRadialGradient(sx, sy, 10, sx, sy, 260);
+  halo.addColorStop(0, rgb([255, 240, 200], 0.7));
+  halo.addColorStop(1, rgb(sky.bot, 0));
+  ctx.fillStyle = halo;
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "rgba(255,248,225,0.95)";
+  ctx.beginPath();
+  ctx.arc(sx, sy, 58, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Gorske plasti
+  const ridge = (t) => Math.pow(1 - Math.abs(Math.sin(t)), 2);
+  const layer = (base, amp, f, col, seed) => {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 8) {
+      ctx.lineTo(x, base - amp * ridge(x * f + seed) - amp * 0.35 * Math.sin(x * f * 3.1 + seed));
+    }
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    ctx.fill();
+  };
+  layer(H * 0.78, 150, 0.006, rgb([20, 26, 46], 0.55), 1.3);
+  layer(H * 0.85, 90, 0.009, rgb([12, 16, 30], 0.8), 2.7);
+  layer(H * 0.93, 40, 0.014, "rgba(5,8,16,0.96)", 0.4);
+  const fade = ctx.createLinearGradient(0, H * 0.25, 0, H);
+  fade.addColorStop(0, "rgba(4,7,16,0)");
+  fade.addColorStop(1, "rgba(4,7,16,0.55)");
+  ctx.fillStyle = fade;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+
+  // Glava
+  ctx.fillStyle = "#fcd770";
+  ctx.font = '800 34px "Inter", sans-serif';
+  ctx.fillText("L E T N I C A . S I", W / 2, 130);
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  ctx.font = '600 32px "Inter", sans-serif';
+  const sub =
+    state.mode === "daily"
+      ? `Dnevni izziv #${state.activeDayNumber} · ${formatSlovenianDate(state.activeDateKey)}`
+      : "Prosta igra";
+  ctx.fillText(sub, W / 2, 180);
+
+  // Glavna letnica
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.font = 'italic 700 46px "Fraunces", Georgia, serif';
+  ctx.fillText("Moj časoplov je priletel do", W / 2, 360);
+  const yearGrad = ctx.createLinearGradient(0, 400, 0, 600);
+  yearGrad.addColorStop(0, "#fff3c4");
+  yearGrad.addColorStop(0.45, "#fcd770");
+  yearGrad.addColorStop(1, "#e0901a");
+  ctx.fillStyle = yearGrad;
+  ctx.shadowColor = "rgba(245,158,11,0.55)";
+  ctx.shadowBlur = 40;
+  ctx.font = '900 230px "Fraunces", Georgia, serif';
+  ctx.fillText(`${reached}`, W / 2, 590);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.font = '700 44px "Fraunces", Georgia, serif';
+  ctx.fillText("od 2026 let", W / 2, 660);
+
+  // Pot 0 → 2026
+  const bx = 140;
+  const bw = W - 280;
+  const by = 735;
+  ctx.fillStyle = "rgba(255,255,255,0.14)";
+  ctx.beginPath();
+  ctx.roundRect(bx, by, bw, 14, 7);
+  ctx.fill();
+  const fillGrad = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+  fillGrad.addColorStop(0, "#3b82f6");
+  fillGrad.addColorStop(0.4, "#8b5cf6");
+  fillGrad.addColorStop(0.75, "#f59e0b");
+  fillGrad.addColorStop(1, "#fcd770");
+  ctx.fillStyle = fillGrad;
+  ctx.beginPath();
+  ctx.roundRect(bx, by, Math.max(14, (bw * reached) / 2026), 14, 7);
+  ctx.fill();
+  ctx.fillStyle = "#fff7d6";
+  ctx.shadowColor = "rgba(251,191,36,0.9)";
+  ctx.shadowBlur = 24;
+  ctx.beginPath();
+  ctx.arc(bx + (bw * reached) / 2026, by + 7, 15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.font = '700 26px "Inter", sans-serif';
+  ctx.textAlign = "left";
+  ctx.fillText("0", bx, by + 56);
+  ctx.textAlign = "right";
+  ctx.fillText("2026", bx + bw, by + 56);
+  ctx.textAlign = "center";
+
+  // Pet krogov
+  const size = 128;
+  const gap = 24;
+  const rowW = size * 5 + gap * 4;
+  let x0 = (W - rowW) / 2;
+  state.guesses.forEach((g, i) => {
+    const tier = g.timedOut ? "tier-timeout" : g.tier;
+    const [c1, c2] = TIER_COLORS[tier] || TIER_COLORS["tier-miss"];
+    const x = x0 + i * (size + gap);
+    const y = 860;
+    const tg = ctx.createLinearGradient(x, y, x + size, y + size);
+    tg.addColorStop(0, c1);
+    tg.addColorStop(1, c2);
+    ctx.fillStyle = tg;
+    if (tier === "tier-perfect") {
+      ctx.shadowColor = "rgba(251,191,36,0.8)";
+      ctx.shadowBlur = 30;
+    }
+    ctx.beginPath();
+    ctx.roundRect(x, y, size, size, 26);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "rgba(10,12,20,0.85)";
+    ctx.font = '900 56px "Fraunces", Georgia, serif';
+    ctx.fillText(String(i + 1), x + size / 2, y + 82);
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.font = '800 28px "Inter", sans-serif';
+    ctx.fillText(g.timedOut ? "čas" : g.diff === 0 ? "v nulo" : `±${g.diff}`, x + size / 2, y + size + 44);
   });
+
+  // Naziv in točke
+  ctx.fillStyle = golden ? "#fde68a" : "#ffffff";
+  ctx.font = '800 38px "Inter", sans-serif';
+  const rank = getRankTitleByYear(reached).replace(/^[^A-Za-zČŠŽčšž]+/u, "").split(" — ")[0];
+  ctx.fillText(rank, W / 2, 1130);
+  ctx.fillStyle = "rgba(255,255,255,0.6)";
+  ctx.font = '600 32px "Inter", sans-serif';
+  ctx.fillText(`${totalScore} / 5000 točk`, W / 2, 1180);
+
+  ctx.fillStyle = "#fcd770";
+  ctx.font = 'italic 700 40px "Fraunces", Georgia, serif';
+  ctx.fillText("Poleti tudi ti → letnica.si", W / 2, 1275);
+
+  return new Promise((resolve) => c.toBlob((blob) => resolve(blob), "image/png"));
+}
+
+async function shareResultImage() {
+  const btn = document.getElementById("btn-share-result");
+  btn.disabled = true;
+  try {
+    const blob = await renderShareImage();
+    const name = state.mode === "daily" ? `letnica-si-${state.activeDayNumber}.png` : "letnica-si.png";
+    const file = new File([blob], name, { type: "image/png" });
+    const text = buildShareText();
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], text });
+        flashButtonLabel("btn-share-result", "Deljeno ✓");
+      } catch (err) {
+        if (err && err.name !== "AbortError") throw err;
+      }
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      flashButtonLabel("btn-share-result", "Slika shranjena ✓");
+    }
+  } catch (err) {
+    console.warn("Deljenje slike ni uspelo:", err);
+    flashButtonLabel("btn-share-result", "Ni uspelo");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ============================================================================
@@ -1219,8 +1613,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Klik na nebo med poletom preskoči animacijo
   document.getElementById("eraly-canvas-viewport").addEventListener("click", () => {
+    if (finale.active) {
+      finishFinale(true);
+      return;
+    }
     if (gameScene) gameScene.skipFlight();
   });
+  document.getElementById("finale-skip").addEventListener("click", () => finishFinale(true));
 
   // Oddaja odgovora in naslednje vprašanje
   document.getElementById("btn-submit-year").addEventListener("click", submitCurrentGuess);
@@ -1247,7 +1646,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Akcije na končnem povzetku
-  document.getElementById("btn-share-result").addEventListener("click", shareResultToClipboard);
+  document.getElementById("btn-share-result").addEventListener("click", shareResultImage);
+  document.getElementById("btn-copy-result").addEventListener("click", shareResultToClipboard);
+  updateCountdowns();
+  setInterval(updateCountdowns, 1000);
   document.getElementById("btn-summary-play-more").addEventListener("click", () => {
     startFreeplayGame();
   });

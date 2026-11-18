@@ -37,6 +37,7 @@
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5L8 5.5Z"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.5"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></symbol>
     <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
     <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></symbol>
   </svg>
@@ -253,6 +254,15 @@
         </div>
       </div>
 
+      <!-- FINALE: ponovitev poleta -->
+      <div class="finale-strip" id="finale-strip" aria-live="polite">
+        <div class="finale-head">
+          <span class="finale-title" id="finale-title">Ponovitev tvojega poleta skozi čas</span>
+          <button type="button" class="finale-skip" id="finale-skip">Preskoči ↵</button>
+        </div>
+        <div class="finale-chips" id="finale-chips"></div>
+      </div>
+
       <!-- AKTIVNI KROG -->
       <div id="active-round-area">
 
@@ -395,13 +405,17 @@
         <div class="summary-actions">
           <button type="button" class="btn-share" id="btn-share-result">
             <svg class="ic"><use href="#i-share" /></svg>
-            <span class="btn-label">Deli rezultat</span>
+            <span class="btn-label">Deli sliko rezultata</span>
           </button>
-          <button type="button" class="btn-secondary-action" id="btn-summary-play-more">
-            <svg class="ic"><use href="#i-shuffle" /></svg>
-            Nova prosta igra
+          <button type="button" class="btn-secondary-action" id="btn-copy-result">
+            <svg class="ic"><use href="#i-copy" /></svg>
+            <span class="btn-label">Kopiraj besedilo</span>
           </button>
         </div>
+        <button type="button" class="btn-secondary-action full" id="btn-summary-play-more">
+          <svg class="ic"><use href="#i-shuffle" /></svg>
+          Nova prosta igra
+        </button>
         <button type="button" class="btn-ghost" id="btn-summary-back-menu">
           <svg class="ic"><use href="#i-home" /></svg>
           Nazaj v vstopni meni
