@@ -1,5 +1,5 @@
 // ============================================================================
-// LETNICA.SI — KINEMATOGRAFSKI 60FPS POLET SKOZI ČAS (Canvas renderer)
+// ČASOLOV — KINEMATOGRAFSKI 60FPS POLET SKOZI ČAS (Canvas renderer)
 // HiDPI platno · večplastna paralaksa · warp zvezde · velikanske letnice stoletij
 // · prehodi obdobij z naslovno karto · vzpon/pristanek z vzmetjo · zlati polet
 // ============================================================================

@@ -1,5 +1,5 @@
 // ============================================================================
-// LETNICA.SI — BAZA 500 DOGODKOV SLOVENSKE ZGODOVINE (od leta 1 n. št. do 2026)
+// ČASOLOV — BAZA 500 DOGODKOV SLOVENSKE ZGODOVINE (od leta 1 n. št. do 2026)
 // Strukturirano v 5 kronoloških sklopov (za uravnotežen Dnevni izziv 5 krogov)
 // ============================================================================
 

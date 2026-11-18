@@ -1,5 +1,5 @@
 // ============================================================================
-// LETNICA.SI — IGRALNI POGON + ERALY.IO 60FPS ANIMIRANI ČASOPLOV (0 ➔ 2026)
+// ČASOLOV — IGRALNI POGON + ERALY.IO 60FPS ANIMIRANI ČASOPLOV (0 ➔ 2026)
 // ============================================================================
 
 const STORAGE_KEY = "letnica_si_state_v2";
@@ -1167,8 +1167,8 @@ function buildShareText() {
   const reachedYear = state.journeyYear;
   const headerTitle =
     state.mode === "daily"
-      ? `🇸🇮 Letnica.si #${state.activeDayNumber} (${formatSlovenianDate(state.activeDateKey)})`
-      : `🇸🇮 Letnica.si (Prosta igra)`;
+      ? `🇸🇮 Časolov #${state.activeDayNumber} (${formatSlovenianDate(state.activeDateKey)})`
+      : `🇸🇮 Časolov (Prosta igra)`;
 
   const emojiRow = state.guesses.map((g) => g.emoji).join("");
   const detailRows = state.guesses
@@ -1293,7 +1293,7 @@ async function renderShareImage() {
   // Glava
   ctx.fillStyle = "#fcd770";
   ctx.font = '800 34px "Inter", sans-serif';
-  ctx.fillText("L E T N I C A . S I", W / 2, 130);
+  ctx.fillText("Č A S O L O V", W / 2, 130);
   ctx.fillStyle = "rgba(255,255,255,0.75)";
   ctx.font = '600 32px "Inter", sans-serif';
   const sub =
@@ -1393,7 +1393,7 @@ async function renderShareImage() {
 
   ctx.fillStyle = "#fcd770";
   ctx.font = 'italic 700 40px "Fraunces", Georgia, serif';
-  ctx.fillText("Poleti tudi ti → letnica.si", W / 2, 1275);
+  ctx.fillText("Poleti tudi ti — igraj Časolov", W / 2, 1275);
 
   return new Promise((resolve) => c.toBlob((blob) => resolve(blob), "image/png"));
 }
@@ -1403,7 +1403,7 @@ async function shareResultImage() {
   btn.disabled = true;
   try {
     const blob = await renderShareImage();
-    const name = state.mode === "daily" ? `letnica-si-${state.activeDayNumber}.png` : "letnica-si.png";
+    const name = state.mode === "daily" ? `casolov-${state.activeDayNumber}.png` : "casolov.png";
     const file = new File([blob], name, { type: "image/png" });
     const text = buildShareText();
     if (navigator.canShare && navigator.canShare({ files: [file] })) {

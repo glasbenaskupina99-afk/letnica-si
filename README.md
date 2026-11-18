@@ -1,4 +1,4 @@
-# 🇸🇮 Letnica.si — Slovenski zgodovinski Eraly (0 – 2026)
+# 🇸🇮 Časolov — polet skozi slovensko zgodovino (0 – 2026)
 
 Interaktivna dnevna igra slovenske zgodovine po vzoru **Eraly.io**.
 

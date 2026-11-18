@@ -1,5 +1,5 @@
 // ============================================================================
-// LETNICA.SI — ZVOK (sintetiziran z Web Audio) IN VIBRACIJA
+// ČASOLOV — ZVOK (sintetiziran z Web Audio) IN VIBRACIJA
 // Brez zvočnih datotek: motor, »whoosh« prehoda obdobja, zvončki zlatega
 // poleta, pristanek, pokašljevanje motorja in tiktakanje zadnjih sekund.
 // ============================================================================
