@@ -8,7 +8,9 @@ compatibility_date = "2025-06-01"
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = true
+# Skozi Worker gre le API sob; statične datoteke streže Cloudflare neposredno
+# (brezplačno in brez omejitve, ne štejejo v dnevno omejitev zahtev)
+run_worker_first = ["/api/*"]
 
 [[d1_databases]]
 binding = "DB"
