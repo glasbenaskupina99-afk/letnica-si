@@ -4806,3 +4806,61 @@ body.no-ads .ad-rails {
   color: var(--text-3);
   line-height: 1.35;
 }
+
+.archive-range {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.archive-reveal {
+  margin-top: 12px;
+}
+
+.archive-reveal summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  padding: 8px 14px;
+  border-radius: 11px;
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-line);
+  color: var(--gold);
+  font-weight: 750;
+  font-size: 14px;
+  user-select: none;
+}
+
+.archive-reveal summary::-webkit-details-marker {
+  display: none;
+}
+
+.archive-reveal summary::before {
+  content: "👁";
+}
+
+.archive-reveal[open] summary {
+  display: none;
+}
+
+.archive-answer {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding-top: 4px;
+  animation: archiveReveal 0.35s var(--ease-out);
+}
+
+.archive-answer .archive-expl {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+@keyframes archiveReveal {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}

@@ -1946,4 +1946,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Zasebne sobe (rooms.js)
   if (window.CasolovRooms) window.CasolovRooms.init();
+
+  // Povezava iz arhiva: /?izziv=N odpre pretekli dnevni izziv
+  const izziv = Number(new URLSearchParams(location.search).get("izziv"));
+  if (Number.isInteger(izziv) && izziv >= 1) {
+    const key = formatDateKey(new Date(EPOCH_START.getFullYear(), EPOCH_START.getMonth(), EPOCH_START.getDate() + izziv - 1));
+    history.replaceState(null, "", location.pathname + location.hash);
+    if (key <= formatDateKey(new Date())) startDailyGame(key);
+  }
 });
