@@ -1,7 +1,7 @@
 // ============================================================================
 // ČASOLOV — strani, ki jih izriše strežnik (berljive tudi za iskalnike)
 //   /arhiv        seznam preteklih dnevnih izzivov
-//   /arhiv/N      izziv št. N z letnicami in razlagami
+//   /arhiv/N      izziv št. N (brez letnic, da ga lahko odigraš znova)
 //   /sitemap.xml  zemljevid strani z vsemi arhivskimi dnevi
 // Arhiv pokaže le dneve PRED današnjim (po slovenskem času), zato nikoli ne
 // razkrije današnjega ali prihodnjih izzivov.
@@ -160,13 +160,13 @@ export function archiveIndex(Core) {
 
   const body = `      <p class="doc-eyebrow">Arhiv</p>
       <h1>Pretekli dnevni izzivi</h1>
-      <p class="doc-lead">Vsak dan opolnoči se dnevni izziv preseli sem — s pravilnimi letnicami in kratkimi razlagami vseh petih dogodkov.</p>
-      <p>Letnice so skrite, dokler ne klikneš <strong>Pokaži letnico</strong>, zato lahko arhiv brez skrbi pregleduješ tudi pred igranjem. Pretekle izzive odigraš v igri pod <strong>Koledar izzivov</strong>.</p>
+      <p class="doc-lead">Vsak dan opolnoči se dnevni izziv preseli sem — s petimi dogodki iz petih obdobij slovenske zgodovine.</p>
+      <p>Letnic arhiv ne razkriva, zato ga lahko brez skrbi pregleduješ tudi pred igranjem. Vsak pretekli izziv lahko odigraš s klikom na <strong>Odigraj ta izziv</strong> ali v igri pod <strong>Koledar izzivov</strong>.</p>
       ${list}`;
   return html(
     layout({
       title: "Arhiv dnevnih izzivov",
-      description: "Pretekli dnevni izzivi Časolova s pravilnimi letnicami in razlagami dogodkov iz slovenske zgodovine.",
+      description: "Pretekli dnevni izzivi Časolova: dogodki iz slovenske zgodovine, ki jih lahko odigraš znova.",
       path: "/arhiv",
       body,
       current: "/arhiv"
@@ -196,13 +196,6 @@ export function archiveDay(Core, n) {
         </div>
         <h2>${esc(e.title)}</h2>
         <p>${esc(e.prompt)}</p>
-        <details class="archive-reveal">
-          <summary>Pokaži letnico</summary>
-          <div class="archive-answer">
-            <span class="archive-year">${e.year}</span>
-            <p class="archive-expl">${esc(e.explanation)}</p>
-          </div>
-        </details>
         <p class="archive-meta">${esc(e.category)} · ${esc(e.region)}</p>
       </section>`;
     })
@@ -213,14 +206,15 @@ export function archiveDay(Core, n) {
 
   const body = `      <p class="doc-eyebrow"><a href="/arhiv" style="text-decoration:none">Arhiv</a> · izziv #${n}</p>
       <h1>Dnevni izziv #${n}</h1>
-      <p class="doc-lead">${esc(prettyDate(key))} — pet dogodkov iz petih obdobij slovenske zgodovine. Letnice so skrite: najprej ugibaj, nato klikni »Pokaži letnico«.</p>
+      <p class="doc-lead">${esc(prettyDate(key))} — pet dogodkov iz petih obdobij slovenske zgodovine. Znaš umestiti vse v pravo leto?</p>
       <p><a href="/?izziv=${n}">Odigraj ta izziv v igri →</a></p>
 ${cards}
+      <a class="doc-cta" href="/?izziv=${n}">Odigraj izziv #${n} →</a>
       <nav class="archive-pager" aria-label="Arhiv">${prev}${next}</nav>`;
   return html(
     layout({
       title: `Izziv #${n} (${prettyDate(key)})`,
-      description: `Dnevni izziv #${n}: ${events.map((e) => e.title).join("; ")}. Letnice so skrite — preizkusi se.`.slice(0, 300),
+      description: `Dnevni izziv #${n}: ${events.map((e) => e.title).join("; ")}. Znaš ugotoviti letnice?`.slice(0, 300),
       path: `/arhiv/${n}`,
       body,
       current: "/arhiv"
