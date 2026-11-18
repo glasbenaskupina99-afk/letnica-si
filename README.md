@@ -13,4 +13,5 @@ Interaktivna dnevna igra slovenske zgodovine po vzoru **Eraly.io**.
 - `index.html` — Vstopni meni, igralni oder s 60fps Canvas časoplovom, arhiv dni in statistika
 - `style.css` — Temna in svetla tema, animacije in odzivna postavitev
 - `events.js` — Baza 141 mejnikov slovenske zgodovine v 5 kronoloških sklopih (`14 n. št. – 2025/2026`)
-- `app.js` — Igralni pogon, 20-sekundni odštevalnik in `EralySceneRenderer` (60fps Canvas animacija)
+- `scene.js` — `EralySceneRenderer`: kinematografski 60fps HiDPI Canvas polet (večplastna paralaksa, warp zvezde, letnice stoletij, prehodi obdobij, zlati polet, odometer letnice)
+- `app.js` — Igralni pogon, 20-sekundni odštevalnik in zaporedje razkritja rezultata po pristanku

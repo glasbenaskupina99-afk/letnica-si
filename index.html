@@ -23,7 +23,7 @@
       <div class="nav-actions">
         <button type="button" class="icon-btn" id="btn-back-menu" title="Vstopni meni">
           <span>🏠</span>
-          <span>Meni</span>
+          <span class="hide-sm">Meni</span>
         </button>
         <button type="button" class="icon-btn streak-badge" id="btn-streak" title="Dnevni niz">
           <span>🔥</span>
@@ -57,7 +57,7 @@
 
         <!-- Živa animirana panorama v vstopnem meniju -->
         <div class="menu-canvas-wrap">
-          <canvas id="menu-preview-canvas" width="780" height="175"></canvas>
+          <canvas id="menu-preview-canvas"></canvas>
           <div class="menu-canvas-overlay">
             <span>I. Antika (Emona)</span>
             <span>II. Srednji vek (Karantanija & Celjski)</span>
@@ -149,19 +149,23 @@
 
         <!-- Interaktivni 60fps Canvas s časoplovom, nebom in slovenskimi zgodovinskimi mejniki -->
         <div class="eraly-canvas-Viewport" id="eraly-canvas-viewport">
-          <canvas id="eraly-game-canvas" width="800" height="235"></canvas>
+          <canvas id="eraly-game-canvas"></canvas>
 
-          <!-- Lebdeči napis med animacijo poleta po oddaji odgovora -->
-          <div class="flight-cinematic-overlay" id="flight-cinematic-overlay">
-            <div class="fco-badge" id="fco-badge">POLET SKOZI ČAS</div>
-            <div class="fco-year-counter" id="fco-year-counter">LETO 0</div>
-            <div class="fco-gain" id="fco-gain">+0 LET</div>
+          <!-- Lebdeči kinematografski napis med poletom (odometer letnice) -->
+          <div class="flight-cinematic-overlay" id="flight-cinematic-overlay" aria-live="polite">
+            <div class="fco-badge" id="fco-badge">Polet skozi čas</div>
+            <div class="fco-year-row">
+              <span class="fco-year-prefix">LETO</span>
+              <span class="fco-year-counter" id="fco-year-counter">0</span>
+            </div>
+            <div class="fco-gain" id="fco-gain">+0 let</div>
+            <div class="fco-skip">Klikni ali ↵ za preskok</div>
           </div>
         </div>
 
         <!-- Spodnja mini-os mejnikov (0 – 2026) pod animiranim nebom -->
         <div class="eraly-mini-ruler">
-          <div class="emr-fill" id="journey-track-fill" style="width: 0%;"></div>
+          <div class="emr-fill" id="journey-track-fill" style="width: 0%;"><span class="emr-head"></span></div>
           <div class="emr-stops">
             <span>0 · Emona</span>
             <span>500 · Karantanija</span>
@@ -406,6 +410,7 @@
   </div>
 
   <script src="events.js"></script>
+  <script src="scene.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
