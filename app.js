@@ -567,18 +567,77 @@ function renderCurrentRound() {
   document.getElementById("event-prompt").textContent = ev.prompt;
 
   const yearInput = document.getElementById("year-input");
-  const slider = document.getElementById("timeline-slider");
   yearInput.value = "";
-  slider.value = 1;
+  configureSliderForEra(eraObj);
 
   document.getElementById("guess-panel").style.display = "block";
   document.getElementById("round-result").classList.remove("visible", "in-flight", "revealed");
 
   startRoundTimer();
 
-  setTimeout(() => {
-    yearInput.focus();
-  }, 40);
+  // Na telefonih tipkovnice ne odpremo sami — drsnik in gumbi so dovolj
+  if (!IS_TOUCH) {
+    setTimeout(() => {
+      yearInput.focus({ preventScroll: true });
+    }, 40);
+  }
+}
+
+// ============================================================================
+// DRSNIK ZA LETNICO: razpon obdobja vprašanja, lebdeča letnica nad ročico
+// ============================================================================
+const IS_TOUCH = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+
+function niceTickStep(span) {
+  const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500];
+  return steps.find((st) => span / st <= 6) || 500;
+}
+
+function configureSliderForEra(eraObj) {
+  const slider = document.getElementById("timeline-slider");
+  const min = eraObj.minYear;
+  const max = eraObj.maxYear;
+  slider.min = min;
+  slider.max = max;
+  slider.value = Math.round((min + max) / 2);
+
+  const ticksEl = document.getElementById("timeline-ticks");
+  const step = niceTickStep(max - min);
+  const ticks = [min];
+  for (let y = Math.ceil((min + 1) / step) * step; y < max; y += step) {
+    if (y - ticks[ticks.length - 1] >= step * 0.6 && max - y >= step * 0.6) ticks.push(y);
+  }
+  ticks.push(max);
+  ticksEl.innerHTML = ticks
+    .map((y) => {
+      const pct = ((y - min) / (max - min)) * 100;
+      return `<span data-year="${y}" style="left: ${pct}%">${y}</span>`;
+    })
+    .join("");
+
+  document.getElementById("guess-range-note").textContent = `Drsnik: ${min} – ${max} · vpis: 1 – 2026`;
+  updateSliderBubble();
+}
+
+function updateSliderBubble() {
+  const slider = document.getElementById("timeline-slider");
+  const bubble = document.getElementById("slider-bubble");
+  const input = document.getElementById("year-input");
+  if (!slider || !bubble) return;
+  const min = Number(slider.min);
+  const max = Number(slider.max);
+  const typed = parseInt(input.value, 10);
+  const hasValue = !isNaN(typed);
+  const val = hasValue ? typed : Number(slider.value);
+  const clamped = Math.max(min, Math.min(max, val));
+  const pct = max > min ? (clamped - min) / (max - min) : 0;
+  // ročica je široka 24 px — lebdeči napis poravnamo na njeno središče
+  bubble.style.left = `calc(${pct * 100}% + ${12 - pct * 24}px)`;
+  bubble.textContent = hasValue ? String(typed) : "?";
+  bubble.classList.toggle("idle", !hasValue);
+  bubble.classList.toggle("outside", hasValue && (typed < min || typed > max));
+  slider.style.setProperty("--fill", `${pct * 100}%`);
+  slider.setAttribute("aria-valuetext", hasValue ? `Leto ${typed}` : `Leto ${slider.value}`);
 }
 
 // ============================================================================
@@ -1128,29 +1187,33 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!isNaN(v) && v >= 1 && v <= 2026) {
       slider.value = v;
     }
+    updateSliderBubble();
   });
 
   slider.addEventListener("input", () => {
     yearInput.value = slider.value;
+    updateSliderBubble();
   });
 
-  document.querySelectorAll("#timeline-ticks span").forEach((tick) => {
-    tick.addEventListener("click", () => {
-      const y = tick.getAttribute("data-year");
-      yearInput.value = y;
-      slider.value = y;
-      yearInput.focus();
-    });
+  document.getElementById("timeline-ticks").addEventListener("click", (e) => {
+    const tick = e.target.closest("span[data-year]");
+    if (!tick) return;
+    const y = tick.getAttribute("data-year");
+    yearInput.value = y;
+    slider.value = y;
+    updateSliderBubble();
+    if (!IS_TOUCH) yearInput.focus();
   });
 
   document.querySelectorAll(".step-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const step = parseInt(btn.getAttribute("data-step"), 10);
-      const curr = parseInt(yearInput.value, 10) || 1900;
+      const curr = parseInt(yearInput.value, 10) || Number(slider.value);
       const next = Math.max(1, Math.min(2026, curr + step));
       yearInput.value = next;
       slider.value = next;
-      yearInput.focus();
+      updateSliderBubble();
+      if (!IS_TOUCH) yearInput.focus();
     });
   });
 

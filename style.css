@@ -1626,14 +1626,67 @@ button {
   letter-spacing: 0;
 }
 
-/* Drsnik — pas, razdeljen po obdobjih (sorazmerno z leti) */
+/* Drsnik — razpon obdobja vprašanja, obarvan v barvi obdobja */
 .timeline-assist {
-  margin-bottom: 20px;
+  margin-bottom: 22px;
+}
+
+.slider-wrap {
+  position: relative;
+  padding-top: 34px;
+}
+
+.slider-bubble {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  min-width: 52px;
+  padding: 4px 9px 5px;
+  border-radius: 9px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--gold-ink);
+  background: linear-gradient(135deg, #fde68a, #f5b942);
+  box-shadow: 0 6px 16px -6px rgba(245, 158, 11, 0.7);
+  pointer-events: none;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.slider-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  background: #f5b942;
+  border-radius: 2px;
+  z-index: -1;
+}
+
+.slider-bubble.idle {
+  color: var(--text-2);
+  background: var(--surface-3);
+  box-shadow: none;
+}
+
+.slider-bubble.idle::after {
+  background: var(--surface-3);
+}
+
+.slider-bubble.outside {
+  opacity: 0.55;
 }
 
 .timeline-slider {
+  --fill: 50%;
   -webkit-appearance: none;
   appearance: none;
+  display: block;
   width: 100%;
   height: 26px;
   background: transparent;
@@ -1643,24 +1696,22 @@ button {
 .timeline-slider::-webkit-slider-runnable-track {
   height: 8px;
   border-radius: 8px;
-  background: linear-gradient(90deg,
-    color-mix(in srgb, #3b82f6 75%, transparent) 0 74%,
-    color-mix(in srgb, #8b5cf6 80%, transparent) 74% 88.3%,
-    color-mix(in srgb, #f59e0b 85%, transparent) 88.3% 94.4%,
-    color-mix(in srgb, #ef4444 85%, transparent) 94.4% 98.1%,
-    #10b981 98.1% 100%);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--era) 85%, #fff 0%) 0 var(--fill), transparent var(--fill)),
+    color-mix(in srgb, var(--era) 18%, var(--surface-3));
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
 
 .timeline-slider::-moz-range-track {
   height: 8px;
   border-radius: 8px;
-  background: linear-gradient(90deg,
-    color-mix(in srgb, #3b82f6 75%, transparent) 0 74%,
-    color-mix(in srgb, #8b5cf6 80%, transparent) 74% 88.3%,
-    color-mix(in srgb, #f59e0b 85%, transparent) 88.3% 94.4%,
-    color-mix(in srgb, #ef4444 85%, transparent) 94.4% 98.1%,
-    #10b981 98.1% 100%);
+  background: color-mix(in srgb, var(--era) 18%, var(--surface-3));
+}
+
+.timeline-slider::-moz-range-progress {
+  height: 8px;
+  border-radius: 8px;
+  background: var(--era);
 }
 
 .timeline-slider::-webkit-slider-thumb {
@@ -1689,20 +1740,24 @@ button {
 }
 
 .timeline-ticks {
-  display: flex;
-  justify-content: space-between;
+  position: relative;
+  height: 22px;
+  margin: 6px 12px 0;
   font-size: 11px;
   color: var(--text-3);
   font-weight: 700;
-  margin-top: 6px;
   user-select: none;
   font-variant-numeric: tabular-nums;
 }
 
 .timeline-ticks span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
   cursor: pointer;
-  padding: 2px 5px;
+  padding: 2px 6px;
   border-radius: 6px;
+  white-space: nowrap;
   transition: color 0.15s ease, background 0.15s ease;
 }
 
@@ -2880,9 +2935,6 @@ button {
   }
   .year-input {
     height: 70px;
-  }
-  .timeline-ticks span:nth-child(even) {
-    display: none;
   }
   .btn-submit-year {
     font-size: 15px;

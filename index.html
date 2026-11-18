@@ -283,7 +283,7 @@
         <div class="guess-panel" id="guess-panel">
           <div class="guess-label-row">
             <span class="guess-label">Katerega leta se je to zgodilo?</span>
-            <span class="guess-range-note">1 – 2026 n. št.</span>
+            <span class="guess-range-note" id="guess-range-note">1 – 2026 n. št.</span>
           </div>
 
           <div class="year-input-group">
@@ -298,6 +298,7 @@
                 max="2026"
                 inputmode="numeric"
                 placeholder="Letnica"
+                aria-label="Letnica dogodka"
                 autocomplete="off"
               />
             </div>
@@ -306,26 +307,19 @@
           </div>
 
           <div class="timeline-assist">
-            <input
-              type="range"
-              id="timeline-slider"
-              class="timeline-slider"
-              min="1"
-              max="2026"
-              value="1"
-            />
-            <div class="timeline-ticks" id="timeline-ticks">
-              <span data-year="14">14</span>
-              <span data-year="623">623</span>
-              <span data-year="1000">1000</span>
-              <span data-year="1550">1550</span>
-              <span data-year="1789">1789</span>
-              <span data-year="1848">1848</span>
-              <span data-year="1918">1918</span>
-              <span data-year="1945">1945</span>
-              <span data-year="1991">1991</span>
-              <span data-year="2026">2026</span>
+            <div class="slider-wrap">
+              <div class="slider-bubble idle" id="slider-bubble" aria-hidden="true">?</div>
+              <input
+                type="range"
+                id="timeline-slider"
+                class="timeline-slider"
+                min="1"
+                max="2026"
+                value="1000"
+                aria-label="Drsnik za izbiro letnice"
+              />
             </div>
+            <div class="timeline-ticks" id="timeline-ticks"></div>
           </div>
 
           <button type="button" class="btn-submit-year" id="btn-submit-year">
