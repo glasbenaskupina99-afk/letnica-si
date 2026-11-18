@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#070b16" />
+  <title>O igri — Časolov</title>
+  <meta name="description" content="Časolov je brezplačna spletna igra ugibanja letnic iz slovenske zgodovine z dnevnim izzivom in sobami s prijatelji." />
+  <link rel="canonical" href="https://casolov.si/o-igri" />
+  <script>
+    try {
+      var s = JSON.parse(localStorage.getItem("letnica_si_state_v2") || "{}");
+      if (s.theme === "light") document.documentElement.setAttribute("data-theme", "light");
+    } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-era="0">
+  <div class="bg-aurora" aria-hidden="true"></div>
+  <div class="bg-grain" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/" aria-label="Časolov — na igro" style="color: inherit; text-decoration: none;">
+        <div class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M9 6h14M9 26h14M11 6c0 6 10 6 10 10s-10 4-10 10M21 6c0 6-10 6-10 10s10 4 10 10" /></svg>
+        </div>
+        <div class="brand-title">
+          <p class="brand-name">Časo<span>lov</span></p>
+          <span class="brand-subtitle">Polet skozi slovensko zgodovino</span>
+        </div>
+      </a>
+      <nav class="nav-actions">
+        <a class="icon-btn" href="/" style="text-decoration: none;">Na igro →</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="doc-main">
+    <article class="doc-card">
+      <p class="doc-eyebrow">O igri</p>
+      <h1>Polet skozi slovensko zgodovino</h1>
+      <p class="doc-lead">Časolov je brezplačna spletna igra, v kateri ugibaš letnice dogodkov iz slovenske zgodovine — od antične Emone do danes.</p>
+
+      <h2>Kako poteka</h2>
+      <p>Vsak dan te čaka nov <strong>dnevni izziv</strong> s petimi dogodki, po enem iz vsakega zgodovinskega obdobja. Za vsak dogodek imaš 20 sekund, da na drsniku izbereš letnico. Bliže kot si pravi letnici, več točk dobiš in dlje skozi čas poleti tvoj časoplov. Do leta 2026 priletiš samo, če vseh pet letnic zadeneš točno.</p>
+      <p>Dnevni izziv je za vse igralce enak in se zamenja vsak dan ob polnoči. Pretekle izzive lahko odigraš v koledarju, poleg tega pa lahko vsak dan odigraš še tri <strong>proste igre</strong> z naključnimi dogodki.</p>
+
+      <h2>Sobe s prijatelji</h2>
+      <p>V zasebni sobi se lahko s prijatelji, sošolci ali sodelavci vsak dan pomeriš v dnevnem izzivu. Za to ne potrebuješ računa: izbereš si le vzdevek in prijateljem pošlješ povezavo do sobe. Rezultati drugih se ti pokažejo šele, ko dnevni izziv odigraš sam.</p>
+
+      <h2>Dogodki</h2>
+      <p>V igri je skoraj 600 dogodkov iz petih obdobij — bitke, ustanovitve, knjige, izumi, športni uspehi ter rojstva in smrti pomembnih Slovencev. Dogodki so zbrani iz javno dostopnih zgodovinskih virov in pregledani, a pri tolikšnem številu se lahko kakšna napaka vseeno izmuzne. Če jo opaziš, nam prosim <a href="/stik">piši</a> — vsak popravek šteje.</p>
+
+      <h2>Za koga je</h2>
+      <p>Za vse, ki radi preverijo svoje znanje: za ljubitelje zgodovine, za učence in dijake, ki se učijo letnic, in za učitelje, ki iščejo kratko popestritev ure. Igra deluje v vsakem sodobnem brskalniku na računalniku in telefonu.</p>
+
+      <a class="doc-cta" href="/">Na današnji izziv →</a>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 Časolov</span>
+    <nav aria-label="Informacije">
+      <a href="/">Igra</a>
+      <a href="/o-igri" aria-current="page">O igri</a>
+      <a href="/zasebnost">Zasebnost</a>
+      <a href="/stik">Stik</a>
+    </nav>
+  </footer>
+</body>
+</html>

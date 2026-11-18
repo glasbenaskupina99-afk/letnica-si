@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#070b16" />
+  <title>Stik — Časolov</title>
+  <meta name="description" content="Kontakt za sporočanje napak, predloge, sodelovanje in zahteve glede osebnih podatkov." />
+  <link rel="canonical" href="https://casolov.si/stik" />
+  <script>
+    try {
+      var s = JSON.parse(localStorage.getItem("letnica_si_state_v2") || "{}");
+      if (s.theme === "light") document.documentElement.setAttribute("data-theme", "light");
+    } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-era="0">
+  <div class="bg-aurora" aria-hidden="true"></div>
+  <div class="bg-grain" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/" aria-label="Časolov — na igro" style="color: inherit; text-decoration: none;">
+        <div class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M9 6h14M9 26h14M11 6c0 6 10 6 10 10s-10 4-10 10M21 6c0 6-10 6-10 10s10 4 10 10" /></svg>
+        </div>
+        <div class="brand-title">
+          <p class="brand-name">Časo<span>lov</span></p>
+          <span class="brand-subtitle">Polet skozi slovensko zgodovino</span>
+        </div>
+      </a>
+      <nav class="nav-actions">
+        <a class="icon-btn" href="/" style="text-decoration: none;">Na igro →</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="doc-main">
+    <article class="doc-card">
+      <p class="doc-eyebrow">Stik</p>
+      <h1>Piši nam</h1>
+      <p class="doc-lead">Opazil si napako v dogodku, imaš predlog ali bi želel sodelovati? Veseli bomo vsakega sporočila.</p>
+
+      <div class="doc-contact">
+        <a href="mailto:kontakt@casolov.si">kontakt@casolov.si</a>
+      </div>
+
+      <h2>Napaka v dogodku</h2>
+      <p>Navedi naslov dogodka, letnico, ki jo prikaže igra, in pravilno letnico — po možnosti z virom. Napake popravimo čim prej.</p>
+
+      <h2>Predlogi in nove ideje</h2>
+      <p>Pogrešaš kakšen pomemben dogodek ali osebnost? Bi si želel novo funkcijo? Piši nam.</p>
+
+      <h2>Šole in sodelovanje</h2>
+      <p>Učitelji, ki bi Časolov radi uporabljali pri pouku, ter podjetja in ustanove, ki bi želeli podpreti dnevni izziv, nam lahko pišejo na isti naslov.</p>
+
+      <h2>Izbris podatkov</h2>
+      <p>Če želiš izbrisati svoje podatke iz sob, navedi svoj vzdevek in ime sobe. Več o tem, katere podatke hranimo, preberi v <a href="/zasebnost">politiki zasebnosti</a>.</p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 Časolov</span>
+    <nav aria-label="Informacije">
+      <a href="/">Igra</a>
+      <a href="/o-igri">O igri</a>
+      <a href="/zasebnost">Zasebnost</a>
+      <a href="/stik" aria-current="page">Stik</a>
+    </nav>
+  </footer>
+</body>
+</html>
