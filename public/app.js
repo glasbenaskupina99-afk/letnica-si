@@ -15,7 +15,7 @@ const state = {
   currentRound: 0, // 0..4
   guesses: [],
   roundSubmitted: false,
-  freeplayEra: "all",
+  freeplay: null, // { date, count } — odigrane proste igre na današnji dan
   journeyYear: 0,
 
   // 20-sekundni odštevalnik
@@ -65,20 +65,56 @@ function startAnimationLoop() {
   requestAnimationFrame(loop);
 }
 
-function getFreeplayEvents(eraFilter) {
-  if (eraFilter === "all") {
-    const chosen = [];
-    for (let eraId = 1; eraId <= 5; eraId++) {
-      const subPool = SLOVENIAN_EVENTS.filter((e) => e.era === eraId);
-      const pick = subPool[Math.floor(Math.random() * subPool.length)];
-      chosen.push(pick);
-    }
-    return chosen.sort((a, b) => a.year - b.year);
-  }
+// ============================================================================
+// PROSTA IGRA: 3 igre na dan, brez dogodkov današnjega in naslednjih 30
+// dnevnih izzivov (da prosta igra ne razkrije prihodnjih vprašanj)
+// ============================================================================
+const FREEPLAY_PER_DAY = 3;
+const FREEPLAY_SPOILER_DAYS = 30;
 
-  const pool = SLOVENIAN_EVENTS.filter((e) => String(e.era) === String(eraFilter));
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 5);
+function getFreeplayEvents() {
+  const today = new Date();
+  const reserved = new Set();
+  for (let k = 0; k <= FREEPLAY_SPOILER_DAYS; k++) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + k);
+    getDailyEventsForDateKey(formatDateKey(d)).forEach((e) => reserved.add(e.id));
+  }
+  const chosen = [];
+  for (let eraId = 1; eraId <= 5; eraId++) {
+    const pool = SLOVENIAN_EVENTS.filter((e) => e.era === eraId && !reserved.has(e.id));
+    chosen.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  return chosen.sort((a, b) => a.year - b.year);
+}
+
+function freeplayPlayedToday() {
+  const todayKey = formatDateKey(new Date());
+  return state.freeplay && state.freeplay.date === todayKey ? state.freeplay.count : 0;
+}
+
+function freeplayLeftToday() {
+  return Math.max(0, FREEPLAY_PER_DAY - freeplayPlayedToday());
+}
+
+function renderFreeplayLimit() {
+  const left = freeplayLeftToday();
+  const pips = document.querySelectorAll("#freeplay-left .fp-pip");
+  pips.forEach((pip, i) => pip.classList.toggle("used", i >= left));
+  const text = document.getElementById("freeplay-left-text");
+  const label = document.getElementById("freeplay-btn-label");
+  const btn = document.getElementById("btn-menu-start-freeplay");
+  const sumBtn = document.getElementById("btn-summary-play-more");
+  const sumLabel = document.getElementById("summary-play-more-label");
+  const cd = typeof formatCountdown === "function" ? formatCountdown() : "";
+  if (text) text.textContent = `${left} / ${FREEPLAY_PER_DAY} danes`;
+  if (btn) {
+    btn.disabled = left === 0;
+    label.textContent = left === 0 ? `Nove igre čez ${cd}` : "Začni prosto igro";
+  }
+  if (sumBtn) {
+    sumBtn.disabled = left === 0;
+    sumLabel.textContent = left === 0 ? `Proste igre: 3/3 · nove čez ${cd}` : `Nova prosta igra (še ${left})`;
+  }
 }
 
 function getRankTitleByYear(reachedYear) {
@@ -120,6 +156,7 @@ function loadPersistedState() {
     if (typeof parsed.streak === "number") state.streak = parsed.streak;
     if (parsed.lastCompletedDate) state.lastCompletedDate = parsed.lastCompletedDate;
     if (Array.isArray(parsed.unlocked)) state.unlocked = parsed.unlocked;
+    if (parsed.freeplay && typeof parsed.freeplay.count === "number") state.freeplay = parsed.freeplay;
     pruneDailyHistory();
   } catch (err) {
     console.warn("Napaka pri branju shranjenega stanja:", err);
@@ -160,7 +197,8 @@ function savePersistedState() {
         dailyHistory: state.dailyHistory,
         streak: state.streak,
         lastCompletedDate: state.lastCompletedDate,
-        unlocked: state.unlocked
+        unlocked: state.unlocked,
+        freeplay: state.freeplay
       })
     );
   } catch (err) {
@@ -299,11 +337,19 @@ function startDailyGame(dateKey = formatDateKey(new Date())) {
 }
 
 function startFreeplayGame() {
+  if (freeplayLeftToday() === 0) {
+    renderFreeplayLimit();
+    return;
+  }
+  const todayKey = formatDateKey(new Date());
+  state.freeplay = { date: todayKey, count: freeplayPlayedToday() + 1 };
+  savePersistedState();
+  renderFreeplayLimit();
   stopRoundTimer();
   cancelFinaleSilently();
   state.mode = "freeplay";
   state.activeDateKey = null;
-  state.events = getFreeplayEvents(state.freeplayEra);
+  state.events = getFreeplayEvents();
   state.currentRound = 0;
   state.guesses = [];
   state.roundSubmitted = false;
@@ -1020,6 +1066,7 @@ function formatCountdown() {
 
 function updateCountdowns() {
   const cd = formatCountdown();
+  renderFreeplayLimit();
   const timerEl = document.getElementById("next-daily-timer");
   if (timerEl && timerEl.dataset.mode === "daily") {
     timerEl.innerHTML = `Nov dnevni izziv čez <strong class="countdown">${cd}</strong>`;
@@ -1662,7 +1709,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("btn-menu-start-freeplay").addEventListener("click", () => {
-    state.freeplayEra = document.getElementById("menu-era-select").value;
     startFreeplayGame();
   });
 

@@ -765,6 +765,56 @@ button {
   color: var(--text);
 }
 
+.freeplay-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.freeplay-info > span:first-child {
+  flex: 1 1 220px;
+}
+
+.freeplay-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.freeplay-left b {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.fp-pip {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--emerald);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--emerald) 60%, transparent);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.fp-pip.used {
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.btn:disabled,
+.btn-secondary-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

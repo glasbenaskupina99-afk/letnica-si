@@ -155,22 +155,19 @@
             <span class="panel-icon emerald"><svg class="ic"><use href="#i-shuffle" /></svg></span>
             <div>
               <div class="panel-title">Prosta igra</div>
-              <div class="panel-sub">Trening brez vpliva na niz</div>
+              <div class="panel-sub">Trening brez vpliva na niz · 3 igre na dan</div>
             </div>
           </div>
-          <div class="select-wrap">
-            <select id="menu-era-select" class="era-select">
-              <option value="all">Vsa obdobja · po 1 iz vsakega sklopa</option>
-              <option value="1">I. Antika, Karantanija in srednji vek (1 – 1499)</option>
-              <option value="2">II. Reformacija, kmečki upori in barok (1500 – 1789)</option>
-              <option value="3">III. Narodno prebujanje in pomlad narodov (1790 – 1913)</option>
-              <option value="4">IV. Svetovni vojni in doba Jugoslavij (1914 – 1987)</option>
-              <option value="5">V. Osamosvojitev in sodobna Slovenija (1988 – 2026)</option>
-            </select>
+          <div class="freeplay-info">
+            <span>Po en dogodek iz vsakega obdobja, brez vprašanj prihodnjih dnevnih izzivov.</span>
+            <span class="freeplay-left" id="freeplay-left" aria-live="polite">
+              <i class="fp-pip"></i><i class="fp-pip"></i><i class="fp-pip"></i>
+              <b id="freeplay-left-text">3 / 3 danes</b>
+            </span>
           </div>
           <button type="button" class="btn btn-emerald" id="btn-menu-start-freeplay">
             <svg class="ic"><use href="#i-play" /></svg>
-            Začni prosto igro
+            <span id="freeplay-btn-label">Začni prosto igro</span>
           </button>
         </div>
 
@@ -443,7 +440,7 @@
         <aside class="ad-slot ad-summary" data-ad="summary" aria-label="Oglas" hidden></aside>
         <button type="button" class="btn-secondary-action full" id="btn-summary-play-more">
           <svg class="ic"><use href="#i-shuffle" /></svg>
-          Nova prosta igra
+          <span id="summary-play-more-label">Nova prosta igra</span>
         </button>
         <button type="button" class="btn-rooms-cta" id="summary-rooms" hidden>
           <svg class="ic"><use href="#i-users" /></svg>
