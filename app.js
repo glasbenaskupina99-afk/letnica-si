@@ -85,14 +85,69 @@ function seededRandom(seed) {
   };
 }
 
+// Deterministično premešan vrstni red dogodkov enega sklopa za en »cikel«.
+// Vsak cikel traja toliko dni, kolikor ima sklop dogodkov.
+function shuffledEraOrder(eraId, poolSize, cycle) {
+  const rng = seededRandom(hashString(`LETNICA_SI_ERA_${eraId}_CYCLE_${cycle}`));
+  const order = Array.from({ length: poolSize }, (_, i) => i);
+  for (let i = poolSize - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
+
+const eraCycleCache = new Map();
+
+// Vsak nov cikel nastane iz prejšnjega: dogodki iz prve polovice prejšnjega
+// cikla se premešajo samo med seboj, prav tako tisti iz druge polovice.
+// Tako je med dvema pojavitvama istega dogodka vedno vsaj pol cikla (≥ 51 dni).
+function getEraCycleOrder(eraId, poolSize, cycle) {
+  const key = `${eraId}:${poolSize}:${cycle}`;
+  if (eraCycleCache.has(key)) return eraCycleCache.get(key);
+
+  let order;
+  if (cycle <= 0) {
+    order = shuffledEraOrder(eraId, poolSize, cycle);
+  } else {
+    const prev = getEraCycleOrder(eraId, poolSize, cycle - 1);
+    const half = Math.floor(poolSize / 2);
+    const rng = seededRandom(hashString(`LETNICA_SI_ERA_${eraId}_MIX_${cycle}`));
+    const shuffle = (arr) => {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+    order = shuffle(prev.slice(0, half)).concat(shuffle(prev.slice(half)));
+  }
+
+  eraCycleCache.set(key, order);
+  return order;
+}
+
+function getDayIndexFromDateKey(dateKey) {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const epochUtc = Date.UTC(EPOCH_START.getFullYear(), EPOCH_START.getMonth(), EPOCH_START.getDate());
+  return Math.round((Date.UTC(y, m - 1, d) - epochUtc) / 86400000);
+}
+
+// Dnevni izziv: iz vsakega sklopa en dogodek; znotraj sklopa se noben dogodek
+// ne ponovi, dokler niso na vrsti vsi (pri 100 dogodkih = 100 dni).
 function getDailyEventsForDateKey(dateKey) {
-  const rng = seededRandom(hashString("LETNICA_SI_" + dateKey));
+  const dayIndex = getDayIndexFromDateKey(dateKey);
   const chosen = [];
 
   for (let eraId = 1; eraId <= 5; eraId++) {
-    const pool = SLOVENIAN_EVENTS.filter((e) => e.era === eraId);
-    const idx = Math.floor(rng() * pool.length);
-    chosen.push(pool[idx]);
+    const pool = SLOVENIAN_EVENTS.filter((e) => e.era === eraId).sort((a, b) =>
+      a.id.localeCompare(b.id)
+    );
+    const n = pool.length;
+    const cycle = Math.floor(dayIndex / n);
+    const pos = ((dayIndex % n) + n) % n;
+    const order = getEraCycleOrder(eraId, n, cycle);
+    chosen.push(pool[order[pos]]);
   }
 
   return chosen.sort((a, b) => a.year - b.year);
