@@ -285,10 +285,11 @@ class EralySceneRenderer {
     return clamp(this.W / 300, 2.0, 3.2);
   }
   get shipBaseX() {
+    if (this.isPreview) return this.W * (this.W >= 760 ? 0.72 : 0.64);
     return this.W * (this.W < 520 ? 0.24 : 0.3);
   }
   get groundY() {
-    return this.H - (this.isPreview ? 26 : 34);
+    return this.H - (this.isPreview ? 48 : 34);
   }
   get shipScale() {
     if (this.isPreview) return 0.78;
@@ -536,7 +537,8 @@ class EralySceneRenderer {
   shipY(now) {
     const hover = Math.sin(now * 0.0021) * 4 + Math.sin(now * 0.0047) * 1.5;
     const lift = -this.speed * 10;
-    return this.H * (this.isPreview ? 0.4 : 0.44) + hover + lift + this.stallDip;
+    const base = this.isPreview ? (this.W >= 760 ? 0.36 : 0.2) : 0.44;
+    return this.H * base + hover + lift + this.stallDip;
   }
 
   // --------------------------------------------------------------------------
@@ -584,7 +586,7 @@ class EralySceneRenderer {
       });
     }
 
-    if (this.speed > 0.22 && !PREFERS_REDUCED_MOTION) {
+    if (this.speed > 0.22 && !PREFERS_REDUCED_MOTION && !this.isPreview) {
       const n = this.speed * 1.6 * f;
       for (let i = 0; i < Math.floor(n) + (Math.random() < n % 1 ? 1 : 0); i++) {
         this.speedLines.push({
@@ -848,9 +850,9 @@ class EralySceneRenderer {
   drawCenturyGhosts(ctx, shipX, gY, ppy) {
     const startC = Math.floor((this.displayYear - (shipX / ppy) * 1.2) / 100) * 100;
     const endC = this.displayYear + (this.W / ppy) * 1.2;
-    const fontSize = Math.round(clamp(this.H * 0.34, 46, 96));
+    const fontSize = Math.round(clamp(this.H * 0.36, 52, 110));
     ctx.save();
-    ctx.font = `900 ${fontSize}px Inter, system-ui, sans-serif`;
+    ctx.font = `900 ${fontSize}px Fraunces, Georgia, serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
     for (let c = Math.max(0, startC); c <= Math.min(2000, endC); c += 100) {
@@ -972,7 +974,7 @@ class EralySceneRenderer {
     const label = `${gate.code}. ${gate.name}`;
     ctx.font = "800 9.5px Inter, system-ui, sans-serif";
     const tw = ctx.measureText(label).width + 16;
-    const ty = this.isPreview ? 8 : 22;
+    const ty = this.isPreview ? 10 : 62;
     ctx.fillStyle = "rgba(8,14,28,0.78)";
     ctx.strokeStyle = "rgba(125,211,252,0.6)";
     ctx.lineWidth = 1;
@@ -1813,7 +1815,7 @@ class EralySceneRenderer {
     ctx.fillText(`VSTOP V OBDOBJE ${b.code}`.split("").join(String.fromCharCode(8202)), W / 2, cy - 11);
     const spread = (1 - inT) * 8;
     ctx.fillStyle = "#ffffff";
-    ctx.font = `900 ${W < 520 ? 17 : 22}px Inter, system-ui, sans-serif`;
+    ctx.font = `900 ${W < 520 ? 19 : 26}px Fraunces, Georgia, serif`;
     ctx.shadowColor = "rgba(125,211,252,0.8)";
     ctx.shadowBlur = 14;
     ctx.fillText(b.name, W / 2 + spread, cy + 8);

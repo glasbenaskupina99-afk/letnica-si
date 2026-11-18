@@ -175,6 +175,14 @@ function getRankTitleByYear(reachedYear) {
   return "🏺 Popotnik starega veka in Emone";
 }
 
+function slDays(n) {
+  const m = Math.abs(n) % 100;
+  if (m === 1) return "dan";
+  if (m === 2) return "dneva";
+  if (m === 3 || m === 4) return "dnevi";
+  return "dni";
+}
+
 function formatYearsWord(n) {
   const absN = Math.abs(n);
   const mod100 = absN % 100;
@@ -218,13 +226,16 @@ function savePersistedState() {
 }
 
 function applyTheme() {
+  const icon = document.getElementById("theme-icon");
   if (state.theme === "light") {
     document.documentElement.setAttribute("data-theme", "light");
-    document.getElementById("theme-icon").textContent = "🌙";
+    icon.setAttribute("href", "#i-moon");
   } else {
     document.documentElement.removeAttribute("data-theme");
-    document.getElementById("theme-icon").textContent = "☀️";
+    icon.setAttribute("href", "#i-sun");
   }
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", state.theme === "light" ? "#efe7d8" : "#070b16");
 }
 
 function updateTopbarStreak() {
@@ -237,6 +248,7 @@ function updateTopbarStreak() {
 function showMenuView() {
   stopRoundTimer();
   state.view = "menu";
+  document.body.dataset.era = "0";
 
   document.getElementById("menu-view").classList.add("visible");
   document.getElementById("game-view").classList.remove("visible");
@@ -252,7 +264,7 @@ function renderMenuDashboard() {
     played > 0 ? Math.max(...entries.map((e) => e.reachedYear || 0)) : 0;
 
   document.getElementById("menu-best-year").textContent = `Leto ${bestYear}`;
-  document.getElementById("menu-streak-val").textContent = `${state.streak} 🔥`;
+  document.getElementById("menu-streak-val").textContent = `${state.streak} ${slDays(state.streak)}`;
   document.getElementById("menu-played-val").textContent = `${played}`;
 
   const todayKey = formatDateKey(new Date());
@@ -263,17 +275,18 @@ function renderMenuDashboard() {
   const titleEl = document.getElementById("menu-daily-title");
 
   if (savedToday) {
-    statusTag.textContent = `ODIGRANO (Leto ${savedToday.reachedYear})`;
-    titleEl.textContent = `Poglej Dnevni izziv #${todayDayNum}`;
+    statusTag.textContent = `IZZIV #${todayDayNum} · ODIGRANO · LETO ${savedToday.reachedYear}`;
+    titleEl.textContent = "Poglej današnji polet";
   } else {
-    statusTag.textContent = `DNEVNI IZZIV #${todayDayNum}`;
-    titleEl.textContent = `Začni Dnevni izziv (${formatSlovenianDate(todayKey)})`;
+    statusTag.textContent = `IZZIV #${todayDayNum} · ${formatSlovenianDate(todayKey)}`;
+    titleEl.textContent = "Igraj dnevni izziv";
   }
 }
 
 function showArchiveView() {
   stopRoundTimer();
   state.view = "archive";
+  document.body.dataset.era = "0";
 
   document.getElementById("menu-view").classList.remove("visible");
   document.getElementById("game-view").classList.remove("visible");
@@ -359,7 +372,7 @@ function startRoundTimer() {
   const displayEl = document.getElementById("timer-display");
   const fillEl = document.getElementById("timer-progress-fill");
 
-  timerCard.style.display = "block";
+  timerCard.style.display = "";
   displayEl.className = "timer-Display";
   fillEl.className = "timer-progress-fill";
   displayEl.textContent = "20.0 s";
@@ -455,9 +468,10 @@ function renderCurrentRound() {
   restartAnimation(document.getElementById("guess-panel"), "card-enter");
   document.getElementById("summary-panel").classList.remove("visible");
 
-  document.getElementById("event-era-badge").textContent = `Sklop ${eraObj.code} (${eraObj.rangeText})`;
+  document.body.dataset.era = String(ev.era);
+  document.getElementById("event-era-badge").textContent = `Sklop ${eraObj.code} · ${eraObj.rangeText}`;
   document.getElementById("event-category-badge").textContent = ev.category;
-  document.getElementById("event-region-badge").textContent = `📍 ${ev.region}`;
+  document.getElementById("event-region-badge").textContent = ev.region;
   document.getElementById("round-counter-badge").textContent = `Vprašanje ${state.currentRound + 1} / 5`;
 
   document.getElementById("event-title").textContent = ev.title;
@@ -514,7 +528,8 @@ function submitCurrentGuess() {
 
   if (isNaN(rawVal) || rawVal < 1 || rawVal > 2026) {
     yearInput.focus();
-    yearInput.style.borderColor = "#ef4444";
+    yearInput.style.borderColor = "var(--red)";
+    restartAnimation(yearInput, "shake");
     setTimeout(() => {
       yearInput.style.borderColor = "";
     }, 600);
@@ -793,7 +808,7 @@ function renderSummary() {
 
   state.guesses.forEach((g, idx) => {
     const row = document.createElement("div");
-    row.className = "summary-round-item";
+    row.className = `summary-round-item ${g.timedOut ? "tier-timeout" : g.tier || ""}`;
     row.style.animationDelay = `${0.25 + idx * 0.09}s`;
     const userText = g.timedOut
       ? "⏰ Potekel čas (20 s)"
@@ -842,11 +857,11 @@ function shareResultToClipboard() {
   const shareText = `${headerTitle}\n🛸 Časoplov je priletel do: Leto ${reachedYear} / 2026 (${totalScore} tč)\n${emojiRow}\n\n${detailRows}`;
 
   navigator.clipboard.writeText(shareText).then(() => {
-    const btn = document.getElementById("btn-share-result");
-    const orig = btn.textContent;
-    btn.textContent = "✅ Rezultat skopiran v odložišče!";
+    const label = document.querySelector("#btn-share-result .btn-label");
+    const orig = label.textContent;
+    label.textContent = "Skopirano v odložišče ✓";
     setTimeout(() => {
-      btn.textContent = orig;
+      label.textContent = orig;
     }, 2200);
   });
 }
@@ -867,19 +882,25 @@ function renderArchiveGrid() {
     const saved = state.dailyHistory[dKey];
 
     const card = document.createElement("div");
-    card.className = "archive-day-card" + (saved ? " completed" : "");
+    card.className = "archive-day-card" + (saved ? " completed" : "") + (offset === 0 && !saved ? " is-today" : "");
+    card.style.animation = `cardEnter 0.45s var(--ease-out) ${offset * 0.025}s both`;
     const yearReached = saved
       ? saved.reachedYear ?? computeJourneyYearFromGuesses(saved.guesses)
       : null;
+    const pct = saved ? Math.max(3, Math.round((yearReached / 2026) * 100)) : 0;
 
     card.innerHTML = `
+      ${offset === 0 ? '<span class="adc-today">DANES</span>' : ""}
       <div class="adc-top">
-        <span class="adc-num">Izziv #${dayNum}</span>
+        <span class="adc-num">#${dayNum}</span>
         <span class="adc-date">${formatSlovenianDate(dKey)}</span>
       </div>
       <div class="adc-status">
-        ${saved ? `✅ Leto ${yearReached} / 2026` : "▶ Poleti (20 s)"}
+        ${saved
+          ? `<svg class="ic"><use href="#i-check" /></svg>Leto ${yearReached} / 2026`
+          : `<svg class="ic play-ic"><use href="#i-play" /></svg>Poleti`}
       </div>
+      <div class="adc-bar"><i style="width: ${pct}%"></i></div>
     `;
     card.addEventListener("click", () => {
       startDailyGame(dKey);

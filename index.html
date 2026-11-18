@@ -3,155 +3,225 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Letnica.si — Slovenski Eraly (Popotovanje od leta 0 do 2026)</title>
+  <meta name="theme-color" content="#070b16" />
+  <title>Letnica.si — Polet skozi slovensko zgodovino</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,500;1,9..144,700&family=Inter:wght@400;500;600;700;800;900&display=swap"
+  />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
-<body>
+<body data-era="0">
+
+  <!-- ==================== SVG IKONE ==================== -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c.8 3.6 5.5 5.6 5.5 10.5a5.5 5.5 0 0 1-11 0c0-2.6 1.4-4 2.2-5.4.6 1.6 1.6 2.4 2.5 2.4-.4-3 .1-5.3.8-7.5Z"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V6"/><path d="M17 16v-8"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.3c-.8.4-1.2.9-1.2 1.7v.4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6Z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M16 4h4v4"/><path d="M4 20 20 4"/><path d="M20 16v4h-4"/><path d="M14.5 14.5 20 20"/><path d="M4 4l5 5"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"/><path d="M10 13h4"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 13.2 7.6 4.1M15.8 6.7 8.2 10.8"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.8-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.2 12 21 12 21Z"/><circle cx="12" cy="10.5" r="2.3"/></symbol>
+    <symbol id="i-scroll" viewBox="0 0 24 24"><path d="M6 4h11a2 2 0 0 1 2 2v12"/><path d="M6 4a2 2 0 0 0-2 2v1h4V6a2 2 0 0 0-2-2Z"/><path d="M8 7v11a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1H12v1a2 2 0 0 1-2 2"/><path d="M11 9h5M11 12.5h5"/></symbol>
+    <symbol id="i-airship" viewBox="0 0 24 24"><ellipse cx="12.5" cy="9" rx="8" ry="4.3"/><path d="M4.5 9 2 6.5M4.5 9 2 11.5"/><path d="M10 13.3 10.8 17h3.4l.8-3.7"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5L8 5.5Z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  </svg>
+
+  <div class="bg-aurora" aria-hidden="true"></div>
+  <div class="bg-grain" aria-hidden="true"></div>
 
   <!-- ==================== ZGORNJA VRSTICA ==================== -->
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand" id="btn-home" title="Nazaj v vstopni meni">
-        <div class="brand-logo">L.si</div>
+        <div class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M9 6h14M9 26h14M11 6c0 6 10 6 10 10s-10 4-10 10M21 6c0 6-10 6-10 10s10 4 10 10" /></svg>
+        </div>
         <div class="brand-title">
           <h1>Letnica<span>.si</span></h1>
-          <span class="brand-subtitle">Slovenski zgodovinski Eraly (0 – 2026)</span>
+          <span class="brand-subtitle">Polet skozi slovensko zgodovino</span>
         </div>
       </div>
 
-      <div class="nav-actions">
+      <nav class="nav-actions">
         <button type="button" class="icon-btn" id="btn-back-menu" title="Vstopni meni">
-          <span>🏠</span>
+          <svg class="ic"><use href="#i-home" /></svg>
           <span class="hide-sm">Meni</span>
         </button>
         <button type="button" class="icon-btn streak-badge" id="btn-streak" title="Dnevni niz">
-          <span>🔥</span>
+          <svg class="ic"><use href="#i-flame" /></svg>
           <span id="streak-val">0</span>
         </button>
         <button type="button" class="icon-btn" id="btn-open-stats" title="Statistika">
-          <span>📊</span>
+          <svg class="ic"><use href="#i-chart" /></svg>
           <span class="hide-sm">Statistika</span>
         </button>
-        <button type="button" class="icon-btn" id="btn-open-rules" title="Kako igrati">
-          <span>❓</span>
+        <button type="button" class="icon-btn icon-only" id="btn-open-rules" title="Kako igrati">
+          <svg class="ic"><use href="#i-help" /></svg>
         </button>
-        <button type="button" class="icon-btn" id="btn-theme-toggle" title="Preklopi temno/svetlo temo">
-          <span id="theme-icon">☀️</span>
+        <button type="button" class="icon-btn icon-only" id="btn-theme-toggle" title="Preklopi temno/svetlo temo">
+          <svg class="ic"><use id="theme-icon" href="#i-sun" /></svg>
         </button>
-      </div>
+      </nav>
     </div>
   </header>
 
   <!-- ==================== GLAVNI VSEBNIK ==================== -->
   <main class="container">
 
-    <!-- ==================== 1. VSTOPNI MENI (START SCREEN) ==================== -->
+    <!-- ==================== 1. VSTOPNI MENI ==================== -->
     <section class="menu-view visible" id="menu-view">
-      <div class="hero-card">
-        <div class="hero-badge">🇸🇮 ČASOVNI POLET SKOZI SLOVENSKO ZGODOVINO · 20 SEKUND NA VPRAŠANJE</div>
-        <h2 class="hero-title">Poleti od <span>leta 0</span> do <span>leta 2026</span>!</h2>
-        <p class="hero-desc">
-          Tvoj časoplov s popotnikom štarta v <strong>letu 0</strong>. V vsakem izmed <strong>5 vprašanj</strong> imaš <strong>20 sekund</strong>, da vpišeš letnico slovenskega zgodovinskega dogodka. Po vsakem odgovoru časoplov poleti naprej čez zgodovinska obdobja — <strong>v leto 2026 priletiš zgolj, če zadeneš vseh 5 letnic točno v nulo!</strong>
-        </p>
 
-        <!-- Živa animirana panorama v vstopnem meniju -->
-        <div class="menu-canvas-wrap">
-          <canvas id="menu-preview-canvas"></canvas>
-          <div class="menu-canvas-overlay">
-            <span>I. Antika (Emona)</span>
-            <span>II. Srednji vek (Karantanija & Celjski)</span>
-            <span>III. Reformacija & Barok</span>
-            <span>IV. Industrijska doba</span>
-            <span class="gold-lbl">V. Sodobnost (🎯 2026)</span>
-          </div>
-        </div>
+      <div class="hero">
+        <canvas id="menu-preview-canvas"></canvas>
+        <div class="hero-shade" aria-hidden="true"></div>
 
-        <!-- Hitra statistika igralca na vstopnem meniju -->
-        <div class="menu-stats-strip">
-          <div class="mss-item">
-            <span class="mss-val" id="menu-best-year">Leto 0</span>
-            <span class="mss-lbl">Najdlje doseženo leto</span>
+        <div class="hero-content">
+          <div class="eyebrow">
+            <span class="eyebrow-dot"></span>
+            Dnevna igra slovenske zgodovine
           </div>
-          <div class="mss-item">
-            <span class="mss-val" id="menu-streak-val">0 🔥</span>
-            <span class="mss-lbl">Dnevni niz</span>
-          </div>
-          <div class="mss-item">
-            <span class="mss-val" id="menu-played-val">0</span>
-            <span class="mss-lbl">Odigranih dni</span>
-          </div>
-        </div>
+          <h2 class="hero-title">Poleti skozi <em>2026 let</em> naše zgodovine.</h2>
+          <p class="hero-desc">
+            Pet dogodkov. Dvajset sekund za vsako letnico. Bolj ko si natančen, dlje poleti tvoj časoplov —
+            <strong>v leto 2026 pristaneš le s petimi zadetki v nulo.</strong>
+          </p>
 
-        <!-- Glavni gumbi vstopnega menija -->
-        <div class="menu-actions-grid">
-          <button type="button" class="menu-btn-primary" id="btn-menu-start-daily">
-            <div class="mbp-top">
-              <span class="mbp-icon">📅</span>
-              <span class="mbp-tag" id="menu-daily-status-tag">DANAŠNJI IZZIV</span>
-            </div>
-            <div class="mbp-title" id="menu-daily-title">Igraj Dnevni izziv</div>
-            <div class="mbp-sub">5 dogodkov · Enaki za vse igralce danes · 20 s na krog</div>
+          <button type="button" class="btn-hero" id="btn-menu-start-daily">
+            <span class="btn-hero-icon"><svg class="ic"><use href="#i-calendar" /></svg></span>
+            <span class="btn-hero-text">
+              <span class="btn-hero-tag" id="menu-daily-status-tag">DNEVNI IZZIV</span>
+              <span class="btn-hero-title" id="menu-daily-title">Začni dnevni izziv</span>
+            </span>
+            <span class="btn-hero-arrow"><svg class="ic"><use href="#i-arrow" /></svg></span>
           </button>
+        </div>
 
-          <div class="menu-secondary-col">
-            <div class="freeplay-menu-box">
-              <div class="fmb-header">
-                <span>🎲 Prosta igra (Trening)</span>
-              </div>
-              <select id="menu-era-select" class="era-select full-w">
-                <option value="all">Vsa obdobja (1 – 2026) · 1 iz vsakega sklopa</option>
-                <option value="1">I. Antika, Karantanija in srednji vek (1 – 1499)</option>
-                <option value="2">II. Reformacija, kmečki upori in barok (1500 – 1789)</option>
-                <option value="3">III. Narodno prebujanje in pomlad narodov (1790 – 1913)</option>
-                <option value="4">IV. Svetovni vojni in doba Jugoslavij (1914 – 1987)</option>
-                <option value="5">V. Osamosvojitev in sodobna Slovenija (1988 – 2026)</option>
-              </select>
-              <button type="button" class="btn-start-freeplay" id="btn-menu-start-freeplay">
-                ▶ Začni Prosto igro (20 s / vprašanje)
-              </button>
-            </div>
-
-            <button type="button" class="menu-btn-archive" id="btn-menu-open-archive">
-              <span>🗂️ Arhiv preteklih dnevnih izzivov</span>
-              <span>➔</span>
-            </button>
-          </div>
+        <div class="hero-eras" aria-hidden="true">
+          <span style="--c: #3b82f6">Antika</span>
+          <span style="--c: #8b5cf6">Srednji vek</span>
+          <span style="--c: #f59e0b">Reformacija</span>
+          <span style="--c: #ef4444">Industrija</span>
+          <span style="--c: #10b981">Sodobnost</span>
         </div>
       </div>
-    </section>
 
-    <!-- ==================== 2. POGLED IGRE (Z ERALY.IO ANIMIRANO SCENO) ==================== -->
-    <section class="game-view" id="game-view">
+      <div class="menu-stats-strip">
+        <div class="mss-item">
+          <span class="mss-icon"><svg class="ic"><use href="#i-target" /></svg></span>
+          <span class="mss-text">
+            <span class="mss-val" id="menu-best-year">Leto 0</span>
+            <span class="mss-lbl">Najdlje doseženo leto</span>
+          </span>
+        </div>
+        <div class="mss-item">
+          <span class="mss-icon flame"><svg class="ic"><use href="#i-flame" /></svg></span>
+          <span class="mss-text">
+            <span class="mss-val" id="menu-streak-val">0</span>
+            <span class="mss-lbl">Dnevni niz</span>
+          </span>
+        </div>
+        <div class="mss-item">
+          <span class="mss-icon"><svg class="ic"><use href="#i-calendar" /></svg></span>
+          <span class="mss-text">
+            <span class="mss-val" id="menu-played-val">0</span>
+            <span class="mss-lbl">Odigranih dni</span>
+          </span>
+        </div>
+      </div>
 
-      <!-- GLAVNI ERALY.IO ANIMIRANI ODER (CANVAS + HUD) -->
-      <div class="eraly-stage-card" id="eraly-stage-card">
-        <div class="eraly-stage-topbar">
-          <div class="journey-left">
-            <span class="mode-pill" id="hud-mode-label">Dnevni #1</span>
-            <div class="round-dots" id="round-dots">
-              <div class="round-dot current">1</div>
-              <div class="round-dot">2</div>
-              <div class="round-dot">3</div>
-              <div class="round-dot">4</div>
-              <div class="round-dot">5</div>
+      <div class="menu-actions-grid">
+        <div class="panel freeplay-menu-box">
+          <div class="panel-head">
+            <span class="panel-icon emerald"><svg class="ic"><use href="#i-shuffle" /></svg></span>
+            <div>
+              <div class="panel-title">Prosta igra</div>
+              <div class="panel-sub">Trening brez vpliva na niz</div>
             </div>
           </div>
-
-          <div class="eraly-era-pill" id="stage-era-pill">Obdobje: I. Antika (Leto 0)</div>
-
-          <div class="journey-year-status">
-            <span class="jys-label">Doseženo leto:</span>
-            <span class="jys-value" id="journey-current-year">0</span>
-            <span class="jys-max">/ 2026</span>
+          <div class="select-wrap">
+            <select id="menu-era-select" class="era-select">
+              <option value="all">Vsa obdobja · po 1 iz vsakega sklopa</option>
+              <option value="1">I. Antika, Karantanija in srednji vek (1 – 1499)</option>
+              <option value="2">II. Reformacija, kmečki upori in barok (1500 – 1789)</option>
+              <option value="3">III. Narodno prebujanje in pomlad narodov (1790 – 1913)</option>
+              <option value="4">IV. Svetovni vojni in doba Jugoslavij (1914 – 1987)</option>
+              <option value="5">V. Osamosvojitev in sodobna Slovenija (1988 – 2026)</option>
+            </select>
           </div>
+          <button type="button" class="btn btn-emerald" id="btn-menu-start-freeplay">
+            <svg class="ic"><use href="#i-play" /></svg>
+            Začni prosto igro
+          </button>
         </div>
 
-        <!-- Interaktivni 60fps Canvas s časoplovom, nebom in slovenskimi zgodovinskimi mejniki -->
+        <button type="button" class="panel menu-btn-archive" id="btn-menu-open-archive">
+          <div class="panel-head">
+            <span class="panel-icon violet"><svg class="ic"><use href="#i-archive" /></svg></span>
+            <div>
+              <div class="panel-title">Arhiv izzivov</div>
+              <div class="panel-sub">Zamudil dan? Odigraj pretekle izzive.</div>
+            </div>
+          </div>
+          <span class="archive-arrow"><svg class="ic"><use href="#i-arrow" /></svg></span>
+        </button>
+      </div>
+
+      <ol class="how-steps">
+        <li>
+          <span class="how-num">1</span>
+          <div><strong>Preberi dogodek</strong><span>Od rimske Emone do danes.</span></div>
+        </li>
+        <li>
+          <span class="how-num">2</span>
+          <div><strong>Vpiši letnico</strong><span>V 20 sekundah, brez namigov.</span></div>
+        </li>
+        <li>
+          <span class="how-num">3</span>
+          <div><strong>Poleti naprej</strong><span>Natančnost = dolžina poleta.</span></div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ==================== 2. POGLED IGRE ==================== -->
+    <section class="game-view" id="game-view">
+
+      <div class="eraly-stage-card" id="eraly-stage-card">
         <div class="eraly-canvas-Viewport" id="eraly-canvas-viewport">
           <canvas id="eraly-game-canvas"></canvas>
 
-          <!-- Lebdeči kinematografski napis med poletom (odometer letnice) -->
+          <!-- HUD na nebu -->
+          <div class="stage-hud">
+            <div class="hud-left">
+              <span class="mode-pill" id="hud-mode-label">Dnevni #1</span>
+              <div class="round-dots" id="round-dots">
+                <div class="round-dot current">1</div>
+                <div class="round-dot">2</div>
+                <div class="round-dot">3</div>
+                <div class="round-dot">4</div>
+                <div class="round-dot">5</div>
+              </div>
+            </div>
+            <div class="hud-year">
+              <span class="jys-label">Leto</span>
+              <span class="jys-value" id="journey-current-year">0</span>
+              <span class="jys-max">/ 2026</span>
+            </div>
+          </div>
+
+          <!-- Kinematografski napis med poletom -->
           <div class="flight-cinematic-overlay" id="flight-cinematic-overlay" aria-live="polite">
             <div class="fco-badge" id="fco-badge">Polet skozi čas</div>
             <div class="fco-year-row">
@@ -163,58 +233,57 @@
           </div>
         </div>
 
-        <!-- Spodnja mini-os mejnikov (0 – 2026) pod animiranim nebom -->
-        <div class="eraly-mini-ruler">
-          <div class="emr-fill" id="journey-track-fill" style="width: 0%;"><span class="emr-head"></span></div>
-          <div class="emr-stops">
-            <span>0 · Emona</span>
-            <span>500 · Karantanija</span>
-            <span>1450 · Trubar & Celjski</span>
-            <span>1700 · Industrija & Pomlad</span>
-            <span>1945 · Moderna doba</span>
-            <span class="goal">🎯 2026</span>
+        <!-- Pot od 0 do 2026 -->
+        <div class="journey-bar">
+          <div class="eraly-era-pill" id="stage-era-pill">I. Antika &amp; Emona · Leto 0</div>
+          <div class="journey-track">
+            <div class="jt-rail"></div>
+            <div class="emr-fill" id="journey-track-fill" style="width: 0%;"><span class="emr-head"></span></div>
+            <span class="jt-mark" style="left: 24.68%"><i>500</i></span>
+            <span class="jt-mark" style="left: 71.57%"><i>1450</i></span>
+            <span class="jt-mark" style="left: 83.91%"><i>1700</i></span>
+            <span class="jt-mark" style="left: 96%"><i>1945</i></span>
           </div>
+          <div class="jt-goal"><svg class="ic"><use href="#i-target" /></svg>2026</div>
         </div>
       </div>
 
-      <!-- AKTIVNI KROG: Odštevalnik 20 s + Kartica dogodka + Vnos -->
+      <!-- AKTIVNI KROG -->
       <div id="active-round-area">
 
-        <!-- 20-SEKUNDNI ODŠTEVALNIK -->
-        <div class="timer-bar-card" id="timer-bar-card">
-          <div class="timer-top-row">
-            <span class="timer-label">⏱️ Čas za odgovor:</span>
-            <span class="timer-Display" id="timer-display">20.0 s</span>
-          </div>
-          <div class="timer-progress-track">
-            <div class="timer-progress-fill" id="timer-progress-fill" style="width: 100%;"></div>
-          </div>
-        </div>
-
         <article class="event-card" id="question-event-card">
+          <div class="timer-bar-card" id="timer-bar-card">
+            <div class="timer-progress-track">
+              <div class="timer-progress-fill" id="timer-progress-fill" style="width: 100%;"></div>
+            </div>
+            <div class="timer-chip">
+              <svg class="ic"><use href="#i-clock" /></svg>
+              <span class="timer-Display" id="timer-display">20.0 s</span>
+            </div>
+          </div>
+
           <div class="event-meta">
             <div class="meta-badges">
-              <span class="badge badge-era" id="event-era-badge">Obdobje I</span>
+              <span class="badge badge-era" id="event-era-badge">Sklop I</span>
               <span class="badge" id="event-category-badge">Politična zgodovina</span>
-              <span class="badge badge-region" id="event-region-badge">Kranjska</span>
+              <span class="badge badge-region"><svg class="ic"><use href="#i-pin" /></svg><span id="event-region-badge">Kranjska</span></span>
             </div>
-            <span class="badge" id="round-counter-badge">Vprašanje 1 / 5</span>
+            <span class="round-counter" id="round-counter-badge">Vprašanje 1 / 5</span>
           </div>
 
           <h2 class="event-title" id="event-title">Nalaganje dogodka...</h2>
           <p class="event-prompt" id="event-prompt"></p>
         </article>
 
-        <!-- Vnosno polje za letnico (brez namigov!) -->
         <div class="guess-panel" id="guess-panel">
           <div class="guess-label-row">
-            <span class="guess-label">Katerega leta se je zgodil ta dogodek?</span>
-            <span class="guess-range-note">Obseg: 1 – 2026 n. št.</span>
+            <span class="guess-label">Katerega leta se je to zgodilo?</span>
+            <span class="guess-range-note">1 – 2026 n. št.</span>
           </div>
 
           <div class="year-input-group">
-            <button type="button" class="step-btn" data-step="-10">-10</button>
-            <button type="button" class="step-btn" data-step="-1">-1</button>
+            <button type="button" class="step-btn" data-step="-10">−10</button>
+            <button type="button" class="step-btn" data-step="-1">−1</button>
             <div class="year-input-wrapper">
               <input
                 type="number"
@@ -222,7 +291,8 @@
                 class="year-input"
                 min="1"
                 max="2026"
-                placeholder="Vpiši letnico (1–2026)"
+                inputmode="numeric"
+                placeholder="Letnica"
                 autocomplete="off"
               />
             </div>
@@ -230,7 +300,6 @@
             <button type="button" class="step-btn" data-step="10">+10</button>
           </div>
 
-          <!-- Drsnik časovnice kot vizualni pripomoček (vedno začne na 1) -->
           <div class="timeline-assist">
             <input
               type="range"
@@ -255,18 +324,19 @@
           </div>
 
           <button type="button" class="btn-submit-year" id="btn-submit-year">
-            POŽENI ČASOPLOV (POTRDI LETNICO) ↵
+            <svg class="ic"><use href="#i-airship" /></svg>
+            <span>Poženi časoplov</span>
+            <kbd>Enter ↵</kbd>
           </button>
         </div>
 
-        <!-- REZULTAT KROGA (prikaže se ob poletu časoplova) -->
+        <!-- REZULTAT KROGA -->
         <div class="round-result" id="round-result">
-
           <div class="journey-step-banner" id="journey-step-banner">
             <div class="jsb-icon" id="jsb-icon">🛸</div>
             <div class="jsb-info">
               <div class="jsb-title" id="jsb-title">Časoplov leti naprej skozi zgodovino!</div>
-              <div class="jsb-sub" id="jsb-sub">Leto 0 ➔ Leto 405 (+405 let bližje letu 2026)</div>
+              <div class="jsb-sub" id="jsb-sub">Leto 0 ➔ Leto 405</div>
             </div>
           </div>
 
@@ -275,11 +345,11 @@
               <div class="result-stat-label">Tvoj odgovor</div>
               <div class="result-stat-val" id="res-user-year">—</div>
             </div>
-            <div class="result-stat-box">
+            <div class="result-stat-box accent-emerald">
               <div class="result-stat-label">Pravilna letnica</div>
               <div class="result-stat-val correct-year" id="res-actual-year">—</div>
             </div>
-            <div class="result-stat-box">
+            <div class="result-stat-box accent-gold">
               <div class="result-stat-label">Dolžina poleta</div>
               <div class="result-stat-val points-earned" id="res-points">+0 let</div>
             </div>
@@ -287,7 +357,6 @@
 
           <div class="diff-banner" id="res-diff-banner"></div>
 
-          <!-- Vizualna primerjava na časovnici -->
           <div class="visual-timeline-compare" id="vt-compare-box">
             <div class="vt-track"></div>
             <div class="vt-connector" id="vt-connector"></div>
@@ -295,12 +364,12 @@
             <div class="vt-pin actual" id="vt-pin-actual" title="Pravilna letnica"></div>
           </div>
           <div class="vt-legend" id="vt-legend-box">
-            <span>🟡 Tvoj vnos (<strong id="vt-lbl-guess"></strong>)</span>
-            <span>🟢 Pravilna letnica (<strong id="vt-lbl-actual"></strong>)</span>
+            <span><i class="lg-dot gold"></i>Tvoj vnos <strong id="vt-lbl-guess"></strong></span>
+            <span><i class="lg-dot emerald"></i>Pravilno <strong id="vt-lbl-actual"></strong></span>
           </div>
 
           <div class="explanation-card">
-            <h4>📜 Zgodovinsko ozadje</h4>
+            <h4><svg class="ic"><use href="#i-scroll" /></svg>Zgodovinsko ozadje</h4>
             <p id="res-explanation"></p>
           </div>
 
@@ -310,14 +379,14 @@
         </div>
       </div>
 
-      <!-- KONČNI POVZETEK 5 KROGOV -->
+      <!-- KONČNI POVZETEK -->
       <div class="summary-panel" id="summary-panel">
         <div class="summary-header">
           <div class="summary-rank-badge" id="summary-rank">Mojster slovenske kronologije</div>
-          <div class="summary-reached-year-label">Tvoj časoplov je iz leta 0 priletel do:</div>
+          <div class="summary-reached-year-label">Tvoj časoplov je iz leta 0 priletel do</div>
           <div class="summary-total-score">
-            <span id="summary-year-reached" style="font-size: 52px; color: var(--accent-gold); font-weight: 900;">Leto 0</span>
-            <span>/ 2026</span>
+            <span id="summary-year-reached">Leto 0</span>
+            <span class="summary-of">/ 2026</span>
           </div>
           <div class="summary-subtitle" id="summary-subtitle">Skupne točke: 0 / 5000</div>
         </div>
@@ -326,33 +395,36 @@
 
         <div class="summary-actions">
           <button type="button" class="btn-share" id="btn-share-result">
-            📋 Deli rezultat (Kopiraj)
+            <svg class="ic"><use href="#i-share" /></svg>
+            <span class="btn-label">Deli rezultat</span>
           </button>
           <button type="button" class="btn-secondary-action" id="btn-summary-play-more">
-            🎲 Nova Prosta igra
+            <svg class="ic"><use href="#i-shuffle" /></svg>
+            Nova prosta igra
           </button>
         </div>
-        <div style="margin-top: 10px; text-align: center;">
-          <button type="button" class="icon-btn" id="btn-summary-back-menu" style="width: 100%; justify-content: center; padding: 11px;">
-            🏠 Nazaj v vstopni meni
-          </button>
-        </div>
+        <button type="button" class="btn-ghost" id="btn-summary-back-menu">
+          <svg class="ic"><use href="#i-home" /></svg>
+          Nazaj v vstopni meni
+        </button>
 
         <div class="next-daily-timer" id="next-daily-timer"></div>
       </div>
 
     </section>
 
-    <!-- ==================== 3. POGLED ARHIVA PRETEKLIH DNI ==================== -->
+    <!-- ==================== 3. ARHIV ==================== -->
     <section class="archive-view" id="archive-view">
       <div class="archive-header-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <div>
-            <h2>🗂️ Arhiv dnevnih izzivov</h2>
-            <p>Preizkusi se v preteklih dnevnih izzivih slovenske zgodovine (20 sekund na vprašanje).</p>
-          </div>
-          <button type="button" class="icon-btn" id="btn-archive-back-menu">🏠 Vstopni meni</button>
+        <div>
+          <div class="eyebrow"><span class="eyebrow-dot"></span>Arhiv</div>
+          <h2>Pretekli dnevni izzivi</h2>
+          <p>Vsak dan nov let skozi zgodovino. Odigraj tiste, ki si jih zamudil.</p>
         </div>
+        <button type="button" class="icon-btn" id="btn-archive-back-menu">
+          <svg class="ic"><use href="#i-home" /></svg>
+          Vstopni meni
+        </button>
       </div>
       <div class="archive-grid" id="archive-grid"></div>
     </section>
@@ -363,8 +435,10 @@
   <div class="modal-backdrop" id="modal-stats">
     <div class="modal-card">
       <div class="modal-top">
-        <h3>📊 Tvoja statistika (Dnevni izzivi)</h3>
-        <button type="button" class="btn-close-modal" data-close="modal-stats">✕</button>
+        <h3>Tvoja statistika</h3>
+        <button type="button" class="btn-close-modal" data-close="modal-stats" aria-label="Zapri">
+          <svg class="ic"><use href="#i-close" /></svg>
+        </button>
       </div>
 
       <div class="stats-grid-4">
@@ -382,29 +456,41 @@
         </div>
         <div class="stat-mini">
           <div class="stat-mini-val" id="st-streak">0</div>
-          <div class="stat-mini-lbl">Dnevni niz 🔥</div>
+          <div class="stat-mini-lbl">Dnevni niz</div>
         </div>
       </div>
 
-      <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">
-        Dosežena letnica ob koncu poleta (od 0 do 2026)
-      </h4>
+      <h4 class="modal-subhead">Doseženo leto ob koncu poleta</h4>
       <div id="stats-distribution"></div>
     </div>
   </div>
 
-  <!-- ==================== MODAL: PRAVILA IGRE ==================== -->
+  <!-- ==================== MODAL: PRAVILA ==================== -->
   <div class="modal-backdrop" id="modal-rules">
     <div class="modal-card">
       <div class="modal-top">
-        <h3>🇸🇮 Pravila igre Letnica.si</h3>
-        <button type="button" class="btn-close-modal" data-close="modal-rules">✕</button>
+        <h3>Kako igrati</h3>
+        <button type="button" class="btn-close-modal" data-close="modal-rules" aria-label="Zapri">
+          <svg class="ic"><use href="#i-close" /></svg>
+        </button>
       </div>
       <ul class="rules-list">
-        <li><strong>Polet časoplova od leta 0 do 2026:</strong> Tvoj časoplov s popotnikom začne v <strong>letu 0</strong>. S petimi pravilnimi odgovori letiš čez 5 zgodovinskih obdobij (Antika ➔ Srednji vek ➔ Renesansa/Barok ➔ Industrijska doba ➔ Sodobna Slovenija) vse do <strong>leta 2026</strong>.</li>
-        <li><strong>Zlato nebo ob zadetku v nulo:</strong> Če zadeneš točno letnico (0 let odstopanja), se nebo v slogu Eraly.io obarva <strong>zlato</strong>, časoplov pa poleti z maksimalnim pospeškom!</li>
-        <li><strong>Do leta 2026 le s 100 % natančnostjo:</strong> Do <strong>leta 2026</strong> priletiš <strong>zgolj in samo, če vseh 5 letnic zadeneš točno v nulo!</strong></li>
-        <li><strong>⏱️ Omejitev 20 sekund na vprašanje:</strong> Za vsak dogodek imaš natanko <strong>20 sekund</strong>. Če v 20 sekundah ne potrdiš letnice, motor časoplova obstane in za tisto vprašanje dobiš <strong>0 točk (+0 let premika)</strong>.</li>
+        <li>
+          <span class="rule-icon"><svg class="ic"><use href="#i-airship" /></svg></span>
+          <div><strong>Polet od leta 0 do 2026.</strong> Časoplov s popotnikom začne v letu 0. S petimi odgovori leti čez pet obdobij: Antika ➔ Srednji vek ➔ Renesansa in barok ➔ Industrijska doba ➔ Sodobna Slovenija.</div>
+        </li>
+        <li>
+          <span class="rule-icon gold"><svg class="ic"><use href="#i-target" /></svg></span>
+          <div><strong>Zlato nebo ob zadetku v nulo.</strong> Če zadeneš točno letnico, se nebo obarva zlato in časoplov poleti z največjim pospeškom.</div>
+        </li>
+        <li>
+          <span class="rule-icon emerald"><svg class="ic"><use href="#i-flame" /></svg></span>
+          <div><strong>Do leta 2026 le s 100 % natančnostjo.</strong> V sedanjost priletiš samo, če vseh 5 letnic zadeneš točno.</div>
+        </li>
+        <li>
+          <span class="rule-icon red"><svg class="ic"><use href="#i-clock" /></svg></span>
+          <div><strong>20 sekund na vprašanje.</strong> Če v tem času ne potrdiš letnice, motor ugasne: 0 točk in +0 let premika.</div>
+        </li>
       </ul>
     </div>
   </div>
