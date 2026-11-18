@@ -26,7 +26,8 @@ const state = {
   // Trajni podatki v localStorage
   dailyHistory: {},
   streak: 0,
-  lastCompletedDate: null
+  lastCompletedDate: null,
+  unlocked: [] // tipi odklenjenih mejnikov (zbirka)
 };
 
 let gameScene = null;
@@ -280,6 +281,7 @@ function loadPersistedState() {
     if (parsed.dailyHistory) state.dailyHistory = parsed.dailyHistory;
     if (typeof parsed.streak === "number") state.streak = parsed.streak;
     if (parsed.lastCompletedDate) state.lastCompletedDate = parsed.lastCompletedDate;
+    if (Array.isArray(parsed.unlocked)) state.unlocked = parsed.unlocked;
   } catch (err) {
     console.warn("Napaka pri branju shranjenega stanja:", err);
   }
@@ -293,7 +295,8 @@ function savePersistedState() {
         theme: state.theme,
         dailyHistory: state.dailyHistory,
         streak: state.streak,
-        lastCompletedDate: state.lastCompletedDate
+        lastCompletedDate: state.lastCompletedDate,
+        unlocked: state.unlocked
       })
     );
   } catch (err) {
@@ -881,6 +884,7 @@ function revealRoundResult(guessRecord, ev, prevYear, newJourneyYear, roundIdx) 
   resPanel.classList.remove("in-flight");
   void resPanel.offsetWidth;
   resPanel.classList.add("revealed");
+  unlockPassedLandmarks(newJourneyYear);
   if (audio && !guessRecord.timedOut && !PREFERS_REDUCED_MOTION) {
     setTimeout(() => audio.pin(), 420);
     setTimeout(() => audio.pin(), 1180);
@@ -1417,88 +1421,287 @@ async function shareResultImage() {
 // ============================================================================
 // ARHIV DNEVNIH IZZIVOV IN STATISTIKA
 // ============================================================================
+// Koledar dnevnih izzivov: barvna lestvica enega odtenka (zlato) po doseženem letu
+const SL_MONTHS = ["januar", "februar", "marec", "april", "maj", "junij", "julij", "avgust", "september", "oktober", "november", "december"];
+const SL_WEEKDAYS = ["Pon", "Tor", "Sre", "Čet", "Pet", "Sob", "Ned"];
+
+function reachedYearOf(entry) {
+  return entry.reachedYear ?? computeJourneyYearFromGuesses(entry.guesses);
+}
+
 function renderArchiveGrid() {
   const grid = document.getElementById("archive-grid");
   grid.innerHTML = "";
 
   const today = new Date();
-  for (let offset = 0; offset < 24; offset++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - offset);
-    const dKey = formatDateKey(d);
-    const dayNum = getDayNumberFromDateKey(dKey);
-    const saved = state.dailyHistory[dKey];
+  const todayKey = formatDateKey(today);
+  const epochKey = formatDateKey(EPOCH_START);
+  let cursor = new Date(today.getFullYear(), today.getMonth(), 1);
+  const firstMonth = new Date(EPOCH_START.getFullYear(), EPOCH_START.getMonth(), 1);
+  let monthIdx = 0;
 
-    const card = document.createElement("div");
-    card.className = "archive-day-card" + (saved ? " completed" : "") + (offset === 0 && !saved ? " is-today" : "");
-    card.style.animation = `cardEnter 0.45s var(--ease-out) ${offset * 0.025}s both`;
-    const yearReached = saved
-      ? saved.reachedYear ?? computeJourneyYearFromGuesses(saved.guesses)
-      : null;
-    const pct = saved ? Math.max(3, Math.round((yearReached / 2026) * 100)) : 0;
+  while (cursor >= firstMonth) {
+    const y = cursor.getFullYear();
+    const m = cursor.getMonth();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const lead = (new Date(y, m, 1).getDay() + 6) % 7; // ponedeljek = 0
+    let played = 0;
 
-    card.innerHTML = `
-      ${offset === 0 ? '<span class="adc-today">DANES</span>' : ""}
-      <div class="adc-top">
-        <span class="adc-num">#${dayNum}</span>
-        <span class="adc-date">${formatSlovenianDate(dKey)}</span>
-      </div>
-      <div class="adc-status">
-        ${saved
-          ? `<svg class="ic"><use href="#i-check" /></svg>Leto ${yearReached} / 2026`
-          : `<svg class="ic play-ic"><use href="#i-play" /></svg>Poleti`}
-      </div>
-      <div class="adc-bar"><i style="width: ${pct}%"></i></div>
-    `;
-    card.addEventListener("click", () => {
-      startDailyGame(dKey);
-    });
-    grid.appendChild(card);
+    let cells = "";
+    for (let i = 0; i < lead; i++) cells += '<span class="cal-cell empty" aria-hidden="true"></span>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = formatDateKey(new Date(y, m, d));
+      const saved = state.dailyHistory[key];
+      const isFuture = key > todayKey;
+      const beforeEpoch = key < epochKey;
+      const isToday = key === todayKey;
+      if (isFuture || beforeEpoch) {
+        cells += `<span class="cal-cell off" aria-hidden="true"><b>${d}</b></span>`;
+        continue;
+      }
+      const dayNum = getDayNumberFromDateKey(key);
+      if (saved) {
+        played++;
+        const yr = reachedYearOf(saved);
+        const t = Math.max(0, Math.min(1, yr / 2026));
+        const pct = Math.round(18 + t * 72);
+        cells += `<button type="button" class="cal-cell played${yr === 2026 ? " perfect" : ""}${isToday ? " today" : ""}" data-key="${key}"
+          style="--heat: ${pct}%" data-tip="Izziv #${dayNum} · ${formatSlovenianDate(key)} · Leto ${yr}"
+          aria-label="Izziv ${dayNum}, ${formatSlovenianDate(key)}, odigrano, doseženo leto ${yr}">
+          <b>${d}</b><i>${yr}</i></button>`;
+      } else {
+        cells += `<button type="button" class="cal-cell open${isToday ? " today" : ""}" data-key="${key}"
+          data-tip="Izziv #${dayNum} · ${formatSlovenianDate(key)} · še ni odigran"
+          aria-label="Izziv ${dayNum}, ${formatSlovenianDate(key)}, še ni odigran">
+          <b>${d}</b><i>${isToday ? "danes" : "▶"}</i></button>`;
+      }
+    }
+
+    const section = document.createElement("section");
+    section.className = "cal-month";
+    section.style.animation = `cardEnter 0.45s var(--ease-out) ${monthIdx * 0.08}s both`;
+    section.innerHTML = `
+      <header class="cal-head">
+        <h3>${SL_MONTHS[m]} ${y}</h3>
+        <span>${played} odigranih</span>
+      </header>
+      <div class="cal-grid">
+        ${SL_WEEKDAYS.map((w) => `<span class="cal-wd">${w}</span>`).join("")}
+        ${cells}
+      </div>`;
+    grid.appendChild(section);
+    cursor = new Date(y, m - 1, 1);
+    monthIdx++;
   }
+
+  const legend = document.createElement("div");
+  legend.className = "cal-legend";
+  legend.innerHTML = `
+    <span><i class="lg-cell open"></i>Še ni odigrano</span>
+    <span class="lg-scale">Doseženo leto <em>0</em><i class="lg-ramp"></i><em>2026</em></span>`;
+  grid.appendChild(legend);
+
+  grid.querySelectorAll("button.cal-cell").forEach((btn) => {
+    btn.addEventListener("click", () => startDailyGame(btn.dataset.key));
+  });
 }
 
 function renderStatsModal() {
-  const entries = Object.values(state.dailyHistory);
+  const entries = Object.entries(state.dailyHistory).sort((a, b) => a[0].localeCompare(b[0]));
   const played = entries.length;
-  const years = entries.map((e) => e.reachedYear ?? computeJourneyYearFromGuesses(e.guesses));
+  const years = entries.map(([, e]) => reachedYearOf(e));
   const bestYear = played > 0 ? Math.max(...years) : 0;
-  const avgYear =
-    played > 0 ? Math.round(years.reduce((s, y) => s + y, 0) / played) : 0;
+  const avgYear = played > 0 ? Math.round(years.reduce((s, y) => s + y, 0) / played) : 0;
 
   document.getElementById("st-played").textContent = played;
   document.getElementById("st-avg").textContent = avgYear;
   document.getElementById("st-best").textContent = bestYear;
   document.getElementById("st-streak").textContent = state.streak;
 
+  // 1) Doseženo leto v zadnjih 14 odigranih dnevih (stolpci, en odtenek)
+  const recent = entries.slice(-14);
+  const trend = document.getElementById("stats-trend");
+  if (recent.length === 0) {
+    trend.innerHTML = '<p class="chart-empty">Odigraj prvi dnevni izziv, pa se bo tu izrisal tvoj napredek.</p>';
+  } else {
+    const best = Math.max(...recent.map(([, e]) => reachedYearOf(e)));
+    trend.innerHTML = `
+      <div class="trend-plot" role="list">
+        ${recent
+          .map(([key, e]) => {
+            const yr = reachedYearOf(e);
+            const h = Math.max(3, (yr / 2026) * 100);
+            const [, mm, dd] = key.split("-");
+            return `<div class="trend-col" role="listitem" data-tip="${formatSlovenianDate(key)} · Leto ${yr}" aria-label="${formatSlovenianDate(key)}: leto ${yr}">
+              <span class="trend-val">${yr === best ? yr : ""}</span>
+              <span class="trend-bar${yr === 2026 ? " perfect" : ""}" style="height: ${h}%"></span>
+              <span class="trend-x">${Number(dd)}.<span class="trend-mm"> ${Number(mm)}.</span></span>
+            </div>`;
+          })
+          .join("")}
+      </div>
+      <div class="trend-axis"><span>2026</span><span>1013</span><span>0</span></div>`;
+  }
+
+  // 2) Natančnost po obdobjih: povprečne točke na vprašanje (0–1000)
+  const byId = new Map(SLOVENIAN_EVENTS.map((ev) => [ev.id, ev]));
+  const agg = SLOVENIAN_ERAS.map((er) => ({ era: er, n: 0, pts: 0, diffSum: 0, diffN: 0 }));
+  entries.forEach(([, e]) =>
+    (e.guesses || []).forEach((g) => {
+      const ev = byId.get(g.eventId);
+      if (!ev) return;
+      const a = agg[ev.era - 1];
+      a.n++;
+      a.pts += g.points || 0;
+      if (!g.timedOut && typeof g.diff === "number") {
+        a.diffSum += g.diff;
+        a.diffN++;
+      }
+    })
+  );
+  const eraBox = document.getElementById("stats-eras");
+  const withData = agg.filter((a) => a.n > 0);
+  if (withData.length === 0) {
+    eraBox.innerHTML = '<p class="chart-empty">Tu boš videl, v katerem obdobju si najmočnejši.</p>';
+  } else {
+    const weakest = withData.reduce((w, a) => (a.pts / a.n < w.pts / w.n ? a : w));
+    eraBox.innerHTML =
+      agg
+        .map((a) => {
+          const avg = a.n ? Math.round(a.pts / a.n) : 0;
+          const diff = a.diffN ? Math.round(a.diffSum / a.diffN) : null;
+          const label = a.n ? `${avg} tč${diff !== null ? ` · ±${diff} ${formatYearsWord(diff)}` : ""}` : "brez podatkov";
+          return `<div class="era-row${a === weakest && withData.length > 1 ? " weakest" : ""}" data-tip="${a.era.code}. ${a.era.name}: ${a.n} vprašanj">
+            <span class="era-name"><b>${a.era.code}</b>${a.era.rangeText}</span>
+            <span class="era-track"><span class="era-fill" style="width: ${Math.max(a.n ? 2 : 0, avg / 10)}%"></span></span>
+            <span class="era-val">${label}</span>
+          </div>`;
+        })
+        .join("") +
+      (withData.length > 1
+        ? `<p class="era-note">Najšibkejši sklop: <strong>${weakest.era.code}. ${weakest.era.name}</strong></p>`
+        : "");
+  }
+
+  // 3) Porazdelitev doseženih let
   const buckets = [
-    { label: "🎯 Leto 2026", min: 2026, max: 2026, count: 0 },
+    { label: "Leto 2026", min: 2026, max: 2026, count: 0 },
     { label: "1800 – 2025", min: 1800, max: 2025, count: 0 },
     { label: "1400 – 1799", min: 1400, max: 1799, count: 0 },
     { label: "800 – 1399", min: 800, max: 1399, count: 0 },
     { label: "0 – 799", min: 0, max: 799, count: 0 }
   ];
-
   years.forEach((y) => {
     const b = buckets.find((bk) => y >= bk.min && y <= bk.max);
     if (b) b.count++;
   });
-
   const maxCount = Math.max(1, ...buckets.map((b) => b.count));
   const distContainer = document.getElementById("stats-distribution");
-  distContainer.innerHTML = "";
+  distContainer.innerHTML = buckets
+    .map((b) => {
+      const pct = b.count ? Math.max(6, Math.round((b.count / maxCount) * 100)) : 0;
+      return `<div class="dist-row">
+        <div class="dist-label">${b.label}</div>
+        <div class="dist-bar-wrap"><div class="dist-bar" style="width: ${pct}%"></div></div>
+        <div class="dist-count">${b.count}</div>
+      </div>`;
+    })
+    .join("");
+}
 
-  buckets.forEach((b) => {
-    const pct = Math.max(8, Math.round((b.count / maxCount) * 100));
-    const row = document.createElement("div");
-    row.className = "dist-row";
-    row.innerHTML = `
-      <div class="dist-label">${b.label}</div>
-      <div class="dist-bar-wrap">
-        <div class="dist-bar" style="width: ${pct}%">${b.count}</div>
-      </div>
-    `;
-    distContainer.appendChild(row);
+// ============================================================================
+// ZBIRKA MEJNIKOV: odkleneš jih, ko jih časoplov preleti
+// ============================================================================
+let thumbRenderer = null;
+
+function unlockPassedLandmarks(reachedYear) {
+  const fresh = LANDMARKS.filter((lm) => lm.year <= reachedYear && !state.unlocked.includes(lm.type));
+  if (fresh.length === 0) return;
+  fresh.forEach((lm) => state.unlocked.push(lm.type));
+  savePersistedState();
+  renderCollectionCount();
+  fresh.forEach((lm, i) =>
+    setTimeout(() => {
+      showToast(
+        `<span class="toast-k">Nov mejnik v zbirki</span><strong>${lm.name}</strong><span class="toast-y">${lm.year}</span>`,
+        () => openCollection(lm.type)
+      );
+      if (audio && i === 0) audio.unlockLandmark();
+    }, 900 + i * 700)
+  );
+}
+
+function renderCollectionCount() {
+  const el = document.getElementById("collection-count");
+  if (el) el.textContent = `${state.unlocked.length} / ${LANDMARKS.length} odklenjenih`;
+  const bar = document.getElementById("collection-bar");
+  if (bar) bar.style.width = `${(state.unlocked.length / LANDMARKS.length) * 100}%`;
+}
+
+function openCollection(focusType) {
+  const grid = document.getElementById("collection-grid");
+  if (!thumbRenderer) thumbRenderer = new EralySceneRenderer(document.createElement("canvas"), true);
+  grid.innerHTML = "";
+  LANDMARKS.forEach((lm) => {
+    const unlocked = state.unlocked.includes(lm.type);
+    const card = document.createElement("article");
+    card.className = `coll-card${unlocked ? "" : " locked"}${focusType === lm.type ? " focus" : ""}`;
+    card.innerHTML = `
+      <canvas class="coll-thumb" aria-hidden="true"></canvas>
+      <div class="coll-body">
+        <div class="coll-year">${unlocked ? lm.year : "????"}</div>
+        <div class="coll-name">${unlocked ? lm.name : "Še neodkrit mejnik"}</div>
+        <p class="coll-desc">${unlocked ? lm.desc : "Preleti ga s časoplovom, da ga odkleneš."}</p>
+      </div>`;
+    grid.appendChild(card);
+    const cv = card.querySelector("canvas");
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = 220;
+    const h = 120;
+    cv.width = w * dpr;
+    cv.height = h * dpr;
+    const ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    thumbRenderer.drawLandmarkThumb(ctx, w, h, lm, unlocked);
   });
+  document.getElementById("collection-summary").textContent = `${state.unlocked.length} od ${LANDMARKS.length} mejnikov odklenjenih`;
+  openModal("modal-collection");
+  const focus = grid.querySelector(".focus");
+  if (focus) setTimeout(() => focus.scrollIntoView({ block: "nearest", behavior: "smooth" }), 250);
+}
+
+// ============================================================================
+// OBVESTILA (TOAST) IN MODALNA OKNA
+// ============================================================================
+function showToast(html, onClick) {
+  const wrap = document.getElementById("toast-wrap");
+  const t = document.createElement("button");
+  t.type = "button";
+  t.className = "toast";
+  t.innerHTML = html;
+  t.addEventListener("click", () => {
+    t.remove();
+    if (onClick) onClick();
+  });
+  wrap.appendChild(t);
+  setTimeout(() => t.classList.add("out"), 4200);
+  setTimeout(() => t.remove(), 4700);
+}
+
+let lastFocusBeforeModal = null;
+
+function openModal(id) {
+  const m = document.getElementById(id);
+  lastFocusBeforeModal = document.activeElement;
+  m.classList.add("visible");
+  const closeBtn = m.querySelector(".btn-close-modal");
+  if (closeBtn) setTimeout(() => closeBtn.focus(), 30);
+}
+
+function closeModal(id) {
+  const m = document.getElementById(id);
+  m.classList.remove("visible");
+  if (lastFocusBeforeModal && document.contains(lastFocusBeforeModal)) lastFocusBeforeModal.focus();
 }
 
 // ============================================================================
@@ -1631,7 +1834,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (state.view !== "game") return;
       const statsOpen = document.getElementById("modal-stats").classList.contains("visible");
       const rulesOpen = document.getElementById("modal-rules").classList.contains("visible");
-      if (statsOpen || rulesOpen) return;
+      const collOpen = document.getElementById("modal-collection").classList.contains("visible");
+      if (statsOpen || rulesOpen || collOpen) return;
 
       const summaryVisible = document.getElementById("summary-panel").classList.contains("visible");
       if (summaryVisible) return;
@@ -1655,32 +1859,35 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Modala za statistiko in pravila
-  document.getElementById("btn-open-stats").addEventListener("click", () => {
+  const openStats = () => {
     renderStatsModal();
-    document.getElementById("modal-stats").classList.add("visible");
+    openModal("modal-stats");
+  };
+  document.getElementById("btn-open-stats").addEventListener("click", openStats);
+  document.getElementById("btn-streak").addEventListener("click", openStats);
+  document.getElementById("btn-open-rules").addEventListener("click", () => openModal("modal-rules"));
+  document.getElementById("btn-menu-open-collection").addEventListener("click", () => openCollection());
+  document.getElementById("btn-summary-collection").addEventListener("click", () => openCollection());
+  // Tiho naknadno odklepanje za igralce z obstoječo zgodovino
+  const bestEver = Math.max(0, ...Object.values(state.dailyHistory).map(reachedYearOf));
+  LANDMARKS.forEach((lm) => {
+    if (lm.year <= bestEver && !state.unlocked.includes(lm.type)) state.unlocked.push(lm.type);
   });
-
-  document.getElementById("btn-streak").addEventListener("click", () => {
-    renderStatsModal();
-    document.getElementById("modal-stats").classList.add("visible");
-  });
-
-  document.getElementById("btn-open-rules").addEventListener("click", () => {
-    document.getElementById("modal-rules").classList.add("visible");
-  });
+  renderCollectionCount();
 
   document.querySelectorAll(".btn-close-modal").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const targetId = btn.getAttribute("data-close");
-      document.getElementById(targetId).classList.remove("visible");
-    });
+    btn.addEventListener("click", () => closeModal(btn.getAttribute("data-close")));
   });
 
   document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
     backdrop.addEventListener("click", (e) => {
-      if (e.target === backdrop) {
-        backdrop.classList.remove("visible");
-      }
+      if (e.target === backdrop) closeModal(backdrop.id);
     });
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const open = document.querySelector(".modal-backdrop.visible");
+    if (open) closeModal(open.id);
   });
 });

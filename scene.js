@@ -10,19 +10,19 @@ const PREFERS_REDUCED_MOTION =
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const LANDMARKS = [
-  { year: 14, name: "Rimska Emona", type: "emona", h: 50 },
-  { year: 394, name: "Bitka pri Mrzli reki", type: "claustra", h: 34 },
-  { year: 623, name: "Karantanija · Knežji kamen", type: "karantanija", h: 38 },
-  { year: 973, name: "Brižinski spomeniki", type: "brizinski", h: 40 },
-  { year: 1165, name: "Blejski otok", type: "bled", h: 58 },
-  { year: 1436, name: "Celjski grofje", type: "celje", h: 78 },
-  { year: 1550, name: "Trubarjev Katekizem", type: "trubar", h: 46 },
-  { year: 1689, name: "Valvasorjeva Slava", type: "valvasor", h: 56 },
-  { year: 1846, name: "Južna železnica", type: "train", h: 48 },
-  { year: 1895, name: "Aljažev stolp", type: "aljaz", h: 82 },
-  { year: 1945, name: "Plečnikovo Tromostovje", type: "plecnik", h: 40 },
-  { year: 1991, name: "Samostojna Slovenija", type: "slovenija91", h: 76 },
-  { year: 2026, name: "CILJ · SEDANJOST", type: "portal2026", h: 92 }
+  { year: 14, name: "Rimska Emona", type: "emona", desc: "Rimska kolonija na mestu današnje Ljubljane z mogočnim obzidjem in vrati.", h: 50 },
+  { year: 394, name: "Bitka pri Mrzli reki", type: "claustra", desc: "Pri Mrzli reki v Vipavski dolini Teodozij premaga uzurpatorja Evgenija.", h: 34 },
+  { year: 623, name: "Karantanija · Knežji kamen", type: "karantanija", desc: "Na Knežjem kamnu so ustoličevali karantanske kneze in koroške vojvode.", h: 38 },
+  { year: 973, name: "Brižinski spomeniki", type: "brizinski", desc: "Najstarejši zapis v slovenskem jeziku in v latinici sploh med Slovani.", h: 40 },
+  { year: 1165, name: "Blejski otok", type: "bled", desc: "Cerkev na edinem slovenskem otoku je stoletja romarski cilj.", h: 58 },
+  { year: 1436, name: "Celjski grofje", type: "celje", desc: "Rodbina s tremi zlatimi zvezdami se povzpne med državne kneze cesarstva.", h: 78 },
+  { year: 1550, name: "Trubarjev Katekizem", type: "trubar", desc: "Katekizem in Abecednik — prvi slovenski tiskani knjigi.", h: 46 },
+  { year: 1689, name: "Valvasorjeva Slava", type: "valvasor", desc: "Slava vojvodine Kranjske, ki jo je Valvasor tiskal na Bogenšperku.", h: 56 },
+  { year: 1846, name: "Južna železnica", type: "train", desc: "Južna železnica poveže Dunaj s Trstom čez slovenske dežele.", h: 48 },
+  { year: 1895, name: "Aljažev stolp", type: "aljaz", desc: "Župnik Jakob Aljaž na vrh Triglava postavi kovinski stolp.", h: 82 },
+  { year: 1945, name: "Plečnikovo Tromostovje", type: "plecnik", desc: "Tromostovje, del Plečnikove preobrazbe Ljubljane.", h: 40 },
+  { year: 1991, name: "Samostojna Slovenija", type: "slovenija91", desc: "Razglasitev samostojne Republike Slovenije.", h: 76 },
+  { year: 2026, name: "CILJ · SEDANJOST", type: "portal2026", desc: "Sedanjost — dosežeš jo le s petimi zadetki v nulo.", h: 92 }
 ];
 
 const ERA_GATES = [
@@ -135,7 +135,7 @@ function setOdometer(el, value, speed = 0) {
 // ============================================================================
 class EralySceneRenderer {
   constructor(canvasId, isPreview = false) {
-    this.canvas = document.getElementById(canvasId);
+    this.canvas = typeof canvasId === "string" ? document.getElementById(canvasId) : canvasId;
     this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
     this.isPreview = isPreview;
 
@@ -1077,7 +1077,45 @@ class EralySceneRenderer {
   // --------------------------------------------------------------------------
   // MEJNIKI SLOVENSKE ZGODOVINE
   // --------------------------------------------------------------------------
-  drawLandmark(ctx, x, gY, lm, now, sky) {
+  // Sličica mejnika za album zbirke: nebo leta mejnika, gore, tla in mejnik
+  drawLandmarkThumb(ctx, w, h, lm, unlocked) {
+    const prev = { W: this.W, H: this.H, gg: this.goldenGlow };
+    this.W = w;
+    this.H = h;
+    this.goldenGlow = lm.type === "portal2026" ? 0.6 : 0;
+    const sky = this.getSky(lm.year);
+    const gY = h - 18;
+    const grad = ctx.createLinearGradient(0, 0, 0, gY);
+    grad.addColorStop(0, rgba(sky.top));
+    grad.addColorStop(0.6, rgba(sky.mid));
+    grad.addColorStop(1, rgba(sky.bot));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    const farCol = mixRGB(mixRGB(sky.mid, sky.top, 0.35), [20, 26, 46], 0.35);
+    this.drawRange(ctx, 0, w, gY, lm.year * 7, farCol, sky.bot, 0.5, (x) => 18 + 26 * ridge(x * 0.012 + 1.3), true);
+    ctx.fillStyle = "#070b14";
+    ctx.fillRect(0, gY, w, h - gY);
+    ctx.save();
+    const scale = Math.min(1.25, (h - 30) / (lm.h + 10));
+    ctx.translate(w / 2, gY);
+    ctx.scale(scale, scale);
+    this.drawLandmark(ctx, 0, 0, lm, 1000, sky, true);
+    ctx.restore();
+    if (!unlocked) {
+      ctx.fillStyle = "rgba(6,10,20,0.82)";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(226,232,240,0.55)";
+      ctx.font = "900 34px Fraunces, Georgia, serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("?", w / 2, h / 2);
+    }
+    this.W = prev.W;
+    this.H = prev.H;
+    this.goldenGlow = prev.gg;
+  }
+
+  drawLandmark(ctx, x, gY, lm, now, sky, skipLabel = false) {
     const body = rgba(mixRGB([14, 20, 36], sky.top, 0.2));
     const rim = rgba(mixRGB(sky.bot, [255, 255, 255], 0.25), 0.55);
     const win = "rgba(255,200,110,0.95)";
@@ -1462,7 +1500,7 @@ class EralySceneRenderer {
     }
     ctx.restore();
 
-    this.drawLandmarkLabel(ctx, x, gY, lm, now);
+    if (!skipLabel) this.drawLandmarkLabel(ctx, x, gY, lm, now);
   }
 
   starPath(ctx, x, y, R, r) {

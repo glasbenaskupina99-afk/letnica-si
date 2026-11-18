@@ -173,16 +173,30 @@
           </button>
         </div>
 
-        <button type="button" class="panel menu-btn-archive" id="btn-menu-open-archive">
-          <div class="panel-head">
-            <span class="panel-icon violet"><svg class="ic"><use href="#i-archive" /></svg></span>
-            <div>
-              <div class="panel-title">Arhiv izzivov</div>
-              <div class="panel-sub">Zamudil dan? Odigraj pretekle izzive.</div>
+        <div class="menu-side">
+          <button type="button" class="panel menu-btn-archive" id="btn-menu-open-archive">
+            <div class="panel-head">
+              <span class="panel-icon violet"><svg class="ic"><use href="#i-calendar" /></svg></span>
+              <div>
+                <div class="panel-title">Koledar izzivov</div>
+                <div class="panel-sub">Zamudil dan? Odigraj pretekle izzive.</div>
+              </div>
             </div>
-          </div>
-          <span class="archive-arrow"><svg class="ic"><use href="#i-arrow" /></svg></span>
-        </button>
+            <span class="archive-arrow"><svg class="ic"><use href="#i-arrow" /></svg></span>
+          </button>
+
+          <button type="button" class="panel menu-btn-archive collection-btn" id="btn-menu-open-collection">
+            <div class="panel-head">
+              <span class="panel-icon gold"><svg class="ic"><use href="#i-archive" /></svg></span>
+              <div>
+                <div class="panel-title">Zbirka mejnikov</div>
+                <div class="panel-sub" id="collection-count">0 / 13 odklenjenih</div>
+                <div class="coll-progress"><i id="collection-bar"></i></div>
+              </div>
+            </div>
+            <span class="archive-arrow"><svg class="ic"><use href="#i-arrow" /></svg></span>
+          </button>
+        </div>
       </div>
 
       <ol class="how-steps">
@@ -416,6 +430,10 @@
           <svg class="ic"><use href="#i-shuffle" /></svg>
           Nova prosta igra
         </button>
+        <button type="button" class="btn-ghost" id="btn-summary-collection">
+          <svg class="ic"><use href="#i-archive" /></svg>
+          Zbirka mejnikov
+        </button>
         <button type="button" class="btn-ghost" id="btn-summary-back-menu">
           <svg class="ic"><use href="#i-home" /></svg>
           Nazaj v vstopni meni
@@ -430,9 +448,9 @@
     <section class="archive-view" id="archive-view">
       <div class="archive-header-card">
         <div>
-          <div class="eyebrow"><span class="eyebrow-dot"></span>Arhiv</div>
+          <div class="eyebrow"><span class="eyebrow-dot"></span>Koledar</div>
           <h2>Pretekli dnevni izzivi</h2>
-          <p>Vsak dan nov let skozi zgodovino. Odigraj tiste, ki si jih zamudil.</p>
+          <p>Svetlejše zlato pomeni dlje doseženo leto. Klikni dan, ki si ga zamudil.</p>
         </div>
         <button type="button" class="icon-btn" id="btn-archive-back-menu">
           <svg class="ic"><use href="#i-home" /></svg>
@@ -445,7 +463,7 @@
   </main>
 
   <!-- ==================== MODAL: STATISTIKA ==================== -->
-  <div class="modal-backdrop" id="modal-stats">
+  <div class="modal-backdrop" id="modal-stats" role="dialog" aria-modal="true" aria-label="Statistika">
     <div class="modal-card">
       <div class="modal-top">
         <h3>Tvoja statistika</h3>
@@ -473,13 +491,37 @@
         </div>
       </div>
 
-      <h4 class="modal-subhead">Doseženo leto ob koncu poleta</h4>
+      <h4 class="modal-subhead">Doseženo leto · zadnjih 14 odigranih dni</h4>
+      <div class="stats-trend" id="stats-trend"></div>
+
+      <h4 class="modal-subhead">Natančnost po obdobjih · povprečne točke na vprašanje</h4>
+      <div class="stats-eras" id="stats-eras"></div>
+
+      <h4 class="modal-subhead">Porazdelitev doseženih let</h4>
       <div id="stats-distribution"></div>
     </div>
   </div>
 
+  <!-- ==================== MODAL: ZBIRKA MEJNIKOV ==================== -->
+  <div class="modal-backdrop" id="modal-collection" role="dialog" aria-modal="true" aria-labelledby="collection-title">
+    <div class="modal-card wide">
+      <div class="modal-top">
+        <div>
+          <h3 id="collection-title">Zbirka mejnikov</h3>
+          <p class="modal-sub" id="collection-summary">0 od 13 mejnikov odklenjenih</p>
+        </div>
+        <button type="button" class="btn-close-modal" data-close="modal-collection" aria-label="Zapri">
+          <svg class="ic"><use href="#i-close" /></svg>
+        </button>
+      </div>
+      <div class="collection-grid" id="collection-grid"></div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toast-wrap" aria-live="polite"></div>
+
   <!-- ==================== MODAL: PRAVILA ==================== -->
-  <div class="modal-backdrop" id="modal-rules">
+  <div class="modal-backdrop" id="modal-rules" role="dialog" aria-modal="true" aria-label="Kako igrati">
     <div class="modal-card">
       <div class="modal-top">
         <h3>Kako igrati</h3>
