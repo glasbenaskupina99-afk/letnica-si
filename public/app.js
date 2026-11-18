@@ -120,9 +120,35 @@ function loadPersistedState() {
     if (typeof parsed.streak === "number") state.streak = parsed.streak;
     if (parsed.lastCompletedDate) state.lastCompletedDate = parsed.lastCompletedDate;
     if (Array.isArray(parsed.unlocked)) state.unlocked = parsed.unlocked;
+    pruneDailyHistory();
   } catch (err) {
     console.warn("Napaka pri branju shranjenega stanja:", err);
   }
+}
+
+// Odstrani dneve pred prvim izzivom in rezultate, ki ne ustrezajo več dogodkom
+// svojega dne (npr. po spremembi baze ali začetnega datuma).
+function pruneDailyHistory() {
+  const epochKey = formatDateKey(EPOCH_START);
+  let changed = false;
+  Object.keys(state.dailyHistory).forEach((key) => {
+    const entry = state.dailyHistory[key];
+    let valid = key >= epochKey && entry && Array.isArray(entry.guesses) && entry.guesses.length === 5;
+    if (valid) {
+      const ids = getDailyEventsForDateKey(key).map((e) => e.id);
+      valid = entry.guesses.every((g, i) => g.eventId === ids[i]);
+    }
+    if (!valid) {
+      delete state.dailyHistory[key];
+      changed = true;
+    }
+  });
+  if (state.lastCompletedDate && !state.dailyHistory[state.lastCompletedDate]) {
+    state.lastCompletedDate = null;
+    state.streak = 0;
+    changed = true;
+  }
+  if (changed) savePersistedState();
 }
 
 function savePersistedState() {

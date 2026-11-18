@@ -4,7 +4,9 @@
 // <script>, Cloudflare Worker ga uvozi; oba zato računata popolnoma enako.
 // ============================================================================
 
-const EPOCH_START = new Date(2026, 9, 15);
+// Prvi dnevni izziv (#1). Vsak naslednji dan ob polnoči po lokalnem času se
+// začne nov izziv z naslednjo številko, prejšnji pa ostane v koledarju.
+const EPOCH_START = new Date(2026, 10, 18);
 
 // ============================================================================
 // POMOŽNE FUNKCIJE ZA DATUME IN DETERMINISTIČNO SEME (SEED)
@@ -21,11 +23,9 @@ function formatSlovenianDate(dateKey) {
   return `${d}. ${m}. ${y}`;
 }
 
+// Številka izziva po koledarskih dneh (neodvisno od premika ure poleti/pozimi)
 function getDayNumberFromDateKey(dateKey) {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  const target = new Date(y, m - 1, d);
-  const diffDays = Math.floor((target - EPOCH_START) / (1000 * 60 * 60 * 24)) + 1;
-  return Math.max(1, diffDays);
+  return Math.max(1, getDayIndexFromDateKey(dateKey) + 1);
 }
 
 function hashString(str) {
