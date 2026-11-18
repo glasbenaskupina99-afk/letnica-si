@@ -552,6 +552,11 @@ function updateHud(popIndex = -1) {
     const dot = document.createElement("div");
     dot.className = "round-dot";
     dot.textContent = i + 1;
+    const g = state.guesses[i];
+    dot.setAttribute(
+      "aria-label",
+      g ? `Krog ${i + 1}: ${g.timedOut ? "čas je potekel" : g.diff === 0 ? "zadetek v nulo" : "odstopanje " + g.diff}` : i === state.currentRound ? `Krog ${i + 1}: trenutni` : `Krog ${i + 1}`
+    );
 
     if (state.guesses[i]) {
       dot.classList.add(state.guesses[i].tier);
@@ -884,6 +889,15 @@ function revealRoundResult(guessRecord, ev, prevYear, newJourneyYear, roundIdx) 
   resPanel.classList.remove("in-flight");
   void resPanel.offsetWidth;
   resPanel.classList.add("revealed");
+
+  // Bralniki zaslona: kratek povzetek kroga; tipkovnica: fokus na »naprej«
+  const live = document.getElementById("sr-live");
+  if (live) {
+    live.textContent = guessRecord.timedOut
+      ? `Čas je potekel. Pravilna letnica je ${ev.year}.`
+      : `${guessRecord.diff === 0 ? "Zadetek v nulo!" : `Odstopanje ${guessRecord.diff} ${formatYearsWord(guessRecord.diff)}.`} Tvoj odgovor ${guessRecord.guessYear}, pravilno ${ev.year}. Časoplov je v letu ${newJourneyYear}.`;
+  }
+  if (!IS_TOUCH) setTimeout(() => nextBtn.focus({ preventScroll: true }), 500);
   unlockPassedLandmarks(newJourneyYear);
   if (audio && !guessRecord.timedOut && !PREFERS_REDUCED_MOTION) {
     setTimeout(() => audio.pin(), 420);
@@ -1757,6 +1771,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Gumbi za vrnitev v Vstopni meni
   document.getElementById("btn-home").addEventListener("click", showMenuView);
+  document.getElementById("btn-home").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      showMenuView();
+    }
+  });
   document.getElementById("btn-back-menu").addEventListener("click", showMenuView);
   document.getElementById("btn-summary-back-menu").addEventListener("click", showMenuView);
   document.getElementById("btn-archive-back-menu").addEventListener("click", showMenuView);

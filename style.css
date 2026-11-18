@@ -27,7 +27,7 @@
 
   --text: #eef2f8;
   --text-2: #a3aec2;
-  --text-3: #66738a;
+  --text-3: #8592a8;
 
   --gold: #f5b942;
   --gold-2: #fcd770;
@@ -81,10 +81,10 @@
 
   --text: #1e1912;
   --text-2: #5a5143;
-  --text-3: #8b806d;
+  --text-3: #6f6553;
 
-  --gold: #b9770e;
-  --gold-2: #d99a2b;
+  --gold: #94600a;
+  --gold-2: #c98a1e;
   --gold-deep: #9a6108;
   --gold-soft: rgba(185, 119, 14, 0.11);
   --gold-line: rgba(185, 119, 14, 0.4);
@@ -3563,4 +3563,50 @@ button {
     transition-duration: 0.01ms !important;
     transition-delay: 0s !important;
   }
+}
+
+/* ==================== DOSTOPNOST ==================== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ==================== SVETLA TEMA: oder in pot ==================== */
+[data-theme="light"] .eraly-stage-card,
+[data-theme="light"] .hero {
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(92, 66, 30, 0.18);
+}
+
+[data-theme="light"] .journey-bar {
+  background: var(--surface-solid);
+  border-top: 1px solid var(--line);
+}
+
+[data-theme="light"] .eraly-era-pill {
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+
+[data-theme="light"] .jt-rail {
+  background: var(--surface-3);
+}
+
+[data-theme="light"] .jt-mark {
+  background: var(--line-strong);
+}
+
+[data-theme="light"] .jt-mark i {
+  color: var(--text-3);
+}
+
+[data-theme="light"] .jt-goal {
+  color: var(--gold);
 }

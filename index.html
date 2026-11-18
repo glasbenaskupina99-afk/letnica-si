@@ -48,7 +48,7 @@
   <!-- ==================== ZGORNJA VRSTICA ==================== -->
   <header class="topbar">
     <div class="topbar-inner">
-      <div class="brand" id="btn-home" title="Nazaj v vstopni meni">
+      <div class="brand" id="btn-home" title="Nazaj v vstopni meni" role="button" tabindex="0" aria-label="Letnica.si — nazaj v vstopni meni">
         <div class="brand-logo" aria-hidden="true">
           <svg viewBox="0 0 32 32"><path d="M9 6h14M9 26h14M11 6c0 6 10 6 10 10s-10 4-10 10M21 6c0 6-10 6-10 10s10 4 10 10" /></svg>
         </div>
@@ -59,25 +59,25 @@
       </div>
 
       <nav class="nav-actions">
-        <button type="button" class="icon-btn" id="btn-back-menu" title="Vstopni meni">
+        <button type="button" class="icon-btn" id="btn-back-menu" title="Vstopni meni" aria-label="Vstopni meni">
           <svg class="ic"><use href="#i-home" /></svg>
           <span class="hide-sm">Meni</span>
         </button>
-        <button type="button" class="icon-btn streak-badge" id="btn-streak" title="Dnevni niz">
+        <button type="button" class="icon-btn streak-badge" id="btn-streak" title="Dnevni niz" aria-label="Dnevni niz — odpri statistiko">
           <svg class="ic"><use href="#i-flame" /></svg>
           <span id="streak-val">0</span>
         </button>
-        <button type="button" class="icon-btn" id="btn-open-stats" title="Statistika">
+        <button type="button" class="icon-btn" id="btn-open-stats" title="Statistika" aria-label="Statistika">
           <svg class="ic"><use href="#i-chart" /></svg>
           <span class="hide-sm">Statistika</span>
         </button>
-        <button type="button" class="icon-btn icon-only" id="btn-open-rules" title="Kako igrati">
+        <button type="button" class="icon-btn icon-only" id="btn-open-rules" title="Kako igrati" aria-label="Kako igrati">
           <svg class="ic"><use href="#i-help" /></svg>
         </button>
         <button type="button" class="icon-btn icon-only" id="btn-sound-toggle" title="Izklopi zvok in vibracijo" aria-pressed="true">
           <svg class="ic"><use id="sound-icon" href="#i-sound" /></svg>
         </button>
-        <button type="button" class="icon-btn icon-only" id="btn-theme-toggle" title="Preklopi temno/svetlo temo">
+        <button type="button" class="icon-btn icon-only" id="btn-theme-toggle" title="Preklopi temno/svetlo temo" aria-label="Preklopi temno ali svetlo temo">
           <svg class="ic"><use id="theme-icon" href="#i-sun" /></svg>
         </button>
       </nav>
@@ -91,7 +91,7 @@
     <section class="menu-view visible" id="menu-view">
 
       <div class="hero">
-        <canvas id="menu-preview-canvas"></canvas>
+        <canvas id="menu-preview-canvas" aria-hidden="true"></canvas>
         <div class="hero-shade" aria-hidden="true"></div>
 
         <div class="hero-content">
@@ -220,13 +220,13 @@
 
       <div class="eraly-stage-card" id="eraly-stage-card">
         <div class="eraly-canvas-Viewport" id="eraly-canvas-viewport">
-          <canvas id="eraly-game-canvas"></canvas>
+          <canvas id="eraly-game-canvas" role="img" aria-label="Animirano nebo: časoplov leti skozi zgodovinska obdobja od leta 0 do 2026"></canvas>
 
           <!-- HUD na nebu -->
           <div class="stage-hud">
             <div class="hud-left">
               <span class="mode-pill" id="hud-mode-label">Dnevni #1</span>
-              <div class="round-dots" id="round-dots">
+              <div class="round-dots" id="round-dots" role="group" aria-label="Napredek po krogih">
                 <div class="round-dot current">1</div>
                 <div class="round-dot">2</div>
                 <div class="round-dot">3</div>
@@ -287,7 +287,7 @@
             </div>
             <div class="timer-chip">
               <svg class="ic"><use href="#i-clock" /></svg>
-              <span class="timer-Display" id="timer-display">20.0 s</span>
+              <span class="timer-Display" id="timer-display" role="timer" aria-live="off">20.0 s</span>
             </div>
           </div>
 
@@ -519,6 +519,7 @@
   </div>
 
   <div class="toast-wrap" id="toast-wrap" aria-live="polite"></div>
+  <div class="sr-only" id="sr-live" aria-live="assertive" aria-atomic="true"></div>
 
   <!-- ==================== MODAL: PRAVILA ==================== -->
   <div class="modal-backdrop" id="modal-rules" role="dialog" aria-modal="true" aria-label="Kako igrati">

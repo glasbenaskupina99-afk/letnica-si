@@ -648,6 +648,12 @@ class EralySceneRenderer {
       mid = mixRGB(mid, GOLD_SKY.mid, g);
       bot = mixRGB(bot, GOLD_SKY.bot, g);
     }
+    // Svetla tema: dnevno, pastelno nebo istega obdobja
+    if (this.lightMode) {
+      top = mixRGB(top, [150, 182, 222], 0.55);
+      mid = mixRGB(mid, [226, 214, 204], 0.45);
+      bot = mixRGB(bot, [255, 233, 200], 0.4);
+    }
     return { top, mid, bot };
   }
 
@@ -665,6 +671,7 @@ class EralySceneRenderer {
     const sky = this.getSky(this.displayYear);
     const g = this.goldenGlow;
 
+    this.lightMode = document.documentElement.getAttribute("data-theme") === "light";
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = 1;
@@ -742,7 +749,7 @@ class EralySceneRenderer {
     });
 
     // 8. Bližnji griči z gozdom
-    const nearCol = mixRGB([9, 13, 24], sky.top, 0.22);
+    const nearCol = this.lightMode ? mixRGB(sky.mid, [44, 58, 72], 0.62) : mixRGB([9, 13, 24], sky.top, 0.22);
     this.drawHills(ctx, mL, mR, gY, worldPx * 0.62, nearCol, sky);
 
     // 9. Mejniki
@@ -815,7 +822,7 @@ class EralySceneRenderer {
     // 17. Vinjeta
     const vig = ctx.createRadialGradient(W * 0.45, H * 0.5, Math.min(W, H) * 0.35, W * 0.5, H * 0.5, Math.max(W, H) * 0.75);
     vig.addColorStop(0, "rgba(0,0,0,0)");
-    vig.addColorStop(1, `rgba(0,0,0,${0.28 + this.speed * 0.32})`);
+    vig.addColorStop(1, `rgba(0,0,0,${(this.lightMode ? 0.12 : 0.28) + this.speed * 0.32})`);
     ctx.fillStyle = vig;
     ctx.fillRect(0, 0, W, H);
 
@@ -1021,8 +1028,8 @@ class EralySceneRenderer {
   drawGround(ctx, x0, x1, gY, ppy, shipX, sky) {
     const H = this.H;
     const grd = ctx.createLinearGradient(0, gY, 0, H);
-    grd.addColorStop(0, "#0a1020");
-    grd.addColorStop(1, "#04070f");
+    grd.addColorStop(0, this.lightMode ? "#3a4659" : "#0a1020");
+    grd.addColorStop(1, this.lightMode ? "#2b3546" : "#04070f");
     ctx.fillStyle = grd;
     ctx.fillRect(x0, gY, x1 - x0, H - gY + 40);
 
