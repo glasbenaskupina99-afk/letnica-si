@@ -37,6 +37,7 @@
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5L8 5.5Z"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M15.5 14.2c2.6-.3 4.6 1.3 5 4.3"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.5"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></symbol>
     <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
     <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></symbol>
@@ -174,6 +175,17 @@
         </div>
 
         <div class="menu-side">
+          <button type="button" class="panel menu-btn-archive rooms-btn" id="btn-menu-open-rooms">
+            <div class="panel-head">
+              <span class="panel-icon blue"><svg class="ic"><use href="#i-users" /></svg></span>
+              <div>
+                <div class="panel-title">Sobe s prijatelji</div>
+                <div class="panel-sub">Zasebna lestvica, vsak dan nov dvoboj.</div>
+              </div>
+            </div>
+            <span class="archive-arrow"><svg class="ic"><use href="#i-arrow" /></svg></span>
+          </button>
+
           <button type="button" class="panel menu-btn-archive" id="btn-menu-open-archive">
             <div class="panel-head">
               <span class="panel-icon violet"><svg class="ic"><use href="#i-calendar" /></svg></span>
@@ -430,6 +442,11 @@
           <svg class="ic"><use href="#i-shuffle" /></svg>
           Nova prosta igra
         </button>
+        <button type="button" class="btn-rooms-cta" id="summary-rooms" hidden>
+          <svg class="ic"><use href="#i-users" /></svg>
+          <span id="summary-rooms-label">Tekmuj s prijatelji v zasebni sobi</span>
+          <svg class="ic"><use href="#i-arrow" /></svg>
+        </button>
         <button type="button" class="btn-ghost" id="btn-summary-collection">
           <svg class="ic"><use href="#i-archive" /></svg>
           Zbirka mejnikov
@@ -442,6 +459,22 @@
         <div class="next-daily-timer" id="next-daily-timer"></div>
       </div>
 
+    </section>
+
+    <!-- ==================== SOBE S PRIJATELJI ==================== -->
+    <section class="rooms-view" id="rooms-view">
+      <div class="archive-header-card">
+        <div>
+          <div class="eyebrow"><span class="eyebrow-dot"></span>Sobe</div>
+          <h2>Tekmuj s prijatelji</h2>
+          <p>Ustvari zasebno sobo, pošlji povezavo in vsak dan primerjajte, kdo je s časoplovom priletel najdlje.</p>
+        </div>
+        <button type="button" class="icon-btn" id="btn-rooms-back-menu">
+          <svg class="ic"><use href="#i-home" /></svg>
+          Vstopni meni
+        </button>
+      </div>
+      <div class="rooms-root" id="rooms-root" aria-live="polite"></div>
     </section>
 
     <!-- ==================== 3. ARHIV ==================== -->
@@ -552,8 +585,10 @@
   </div>
 
   <script src="events.js"></script>
+  <script src="core.js"></script>
   <script src="audio.js"></script>
   <script src="scene.js"></script>
   <script src="app.js"></script>
+  <script src="rooms.js"></script>
 </body>
 </html>

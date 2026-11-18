@@ -1,0 +1,14 @@
+{
+  "name": "casolov",
+  "private": true,
+  "description": "Časolov — dnevna igra slovenske zgodovine z zasebnimi sobami",
+  "scripts": {
+    "dev": "wrangler dev",
+    "db:migrate:local": "wrangler d1 migrations apply casolov --local",
+    "db:migrate": "wrangler d1 migrations apply casolov --remote",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.20.0"
+  }
+}

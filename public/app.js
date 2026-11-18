@@ -3,7 +3,6 @@
 // ============================================================================
 
 const STORAGE_KEY = "letnica_si_state_v2";
-const EPOCH_START = new Date(2026, 9, 15);
 const ROUND_TIME_LIMIT_MS = 20000; // 20 sekund na vprašanje
 
 const state = {
@@ -66,115 +65,6 @@ function startAnimationLoop() {
   requestAnimationFrame(loop);
 }
 
-// ============================================================================
-// POMOŽNE FUNKCIJE ZA DATUME IN DETERMINISTIČNO SEME (SEED)
-// ============================================================================
-function formatDateKey(dateObj) {
-  const y = dateObj.getFullYear();
-  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const d = String(dateObj.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function formatSlovenianDate(dateKey) {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  return `${d}. ${m}. ${y}`;
-}
-
-function getDayNumberFromDateKey(dateKey) {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  const target = new Date(y, m - 1, d);
-  const diffDays = Math.floor((target - EPOCH_START) / (1000 * 60 * 60 * 24)) + 1;
-  return Math.max(1, diffDays);
-}
-
-function hashString(str) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-function seededRandom(seed) {
-  let s = seed >>> 0;
-  return function () {
-    s = (s + 0x6d2b79f5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-// Deterministično premešan vrstni red dogodkov enega sklopa za en »cikel«.
-// Vsak cikel traja toliko dni, kolikor ima sklop dogodkov.
-function shuffledEraOrder(eraId, poolSize, cycle) {
-  const rng = seededRandom(hashString(`LETNICA_SI_ERA_${eraId}_CYCLE_${cycle}`));
-  const order = Array.from({ length: poolSize }, (_, i) => i);
-  for (let i = poolSize - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-  return order;
-}
-
-const eraCycleCache = new Map();
-
-// Vsak nov cikel nastane iz prejšnjega: dogodki iz prve polovice prejšnjega
-// cikla se premešajo samo med seboj, prav tako tisti iz druge polovice.
-// Tako je med dvema pojavitvama istega dogodka vedno vsaj pol cikla (≥ 51 dni).
-function getEraCycleOrder(eraId, poolSize, cycle) {
-  const key = `${eraId}:${poolSize}:${cycle}`;
-  if (eraCycleCache.has(key)) return eraCycleCache.get(key);
-
-  let order;
-  if (cycle <= 0) {
-    order = shuffledEraOrder(eraId, poolSize, cycle);
-  } else {
-    const prev = getEraCycleOrder(eraId, poolSize, cycle - 1);
-    const half = Math.floor(poolSize / 2);
-    const rng = seededRandom(hashString(`LETNICA_SI_ERA_${eraId}_MIX_${cycle}`));
-    const shuffle = (arr) => {
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(rng() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
-    };
-    order = shuffle(prev.slice(0, half)).concat(shuffle(prev.slice(half)));
-  }
-
-  eraCycleCache.set(key, order);
-  return order;
-}
-
-function getDayIndexFromDateKey(dateKey) {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  const epochUtc = Date.UTC(EPOCH_START.getFullYear(), EPOCH_START.getMonth(), EPOCH_START.getDate());
-  return Math.round((Date.UTC(y, m - 1, d) - epochUtc) / 86400000);
-}
-
-// Dnevni izziv: iz vsakega sklopa en dogodek; znotraj sklopa se noben dogodek
-// ne ponovi, dokler niso na vrsti vsi (pri 100 dogodkih = 100 dni).
-function getDailyEventsForDateKey(dateKey) {
-  const dayIndex = getDayIndexFromDateKey(dateKey);
-  const chosen = [];
-
-  for (let eraId = 1; eraId <= 5; eraId++) {
-    const pool = SLOVENIAN_EVENTS.filter((e) => e.era === eraId).sort((a, b) =>
-      a.id.localeCompare(b.id)
-    );
-    const n = pool.length;
-    const cycle = Math.floor(dayIndex / n);
-    const pos = ((dayIndex % n) + n) % n;
-    const order = getEraCycleOrder(eraId, n, cycle);
-    chosen.push(pool[order[pos]]);
-  }
-
-  return chosen.sort((a, b) => a.year - b.year);
-}
-
 function getFreeplayEvents(eraFilter) {
   if (eraFilter === "all") {
     const chosen = [];
@@ -189,58 +79,6 @@ function getFreeplayEvents(eraFilter) {
   const pool = SLOVENIAN_EVENTS.filter((e) => String(e.era) === String(eraFilter));
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, 5);
-}
-
-// ============================================================================
-// TOČKOVANJE IN IZRAČUN POLETA OD LETA 0 DO LETA 2026
-// (Do leta 2026 priletiš ZGOLJ, če zadeneš vseh 5 letnic točno v nulo!)
-// ============================================================================
-function calculateScore(guessYear, actualYear, eraId) {
-  const diff = Math.abs(guessYear - actualYear);
-  if (diff === 0) {
-    return { points: 1000, tier: "tier-perfect", emoji: "🎯" };
-  }
-
-  const scaleByEra = {
-    1: 95,
-    2: 45,
-    3: 24,
-    4: 15,
-    5: 9
-  };
-  const halfLife = scaleByEra[eraId] || 25;
-
-  const rawPoints = Math.round(1000 * Math.exp(-diff / halfLife));
-  const points = Math.max(0, Math.min(985, rawPoints));
-
-  let tier = "tier-miss";
-  let emoji = "🔴";
-  if (points >= 800) {
-    tier = "tier-great";
-    emoji = "🟢";
-  } else if (points >= 500) {
-    tier = "tier-good";
-    emoji = "🟡";
-  } else if (points >= 200) {
-    tier = "tier-ok";
-    emoji = "🟠";
-  }
-
-  return { points, tier, emoji };
-}
-
-function computeJourneyYearFromGuesses(guesses) {
-  if (!guesses || guesses.length === 0) return 0;
-  const totalPoints = guesses.reduce((sum, g) => sum + g.points, 0);
-  const allFivePerfect =
-    guesses.length === 5 && guesses.every((g) => !g.timedOut && g.diff === 0);
-
-  if (allFivePerfect) {
-    return 2026;
-  }
-
-  const calculated = Math.floor((totalPoints / 5000) * 2026);
-  return Math.min(2025, calculated);
 }
 
 function getRankTitleByYear(reachedYear) {
@@ -342,6 +180,7 @@ function showMenuView() {
   document.getElementById("menu-view").classList.add("visible");
   document.getElementById("game-view").classList.remove("visible");
   document.getElementById("archive-view").classList.remove("visible");
+  document.getElementById("rooms-view").classList.remove("visible");
 
   renderMenuDashboard();
 }
@@ -380,6 +219,7 @@ function showArchiveView() {
 
   document.getElementById("menu-view").classList.remove("visible");
   document.getElementById("game-view").classList.remove("visible");
+  document.getElementById("rooms-view").classList.remove("visible");
   document.getElementById("archive-view").classList.add("visible");
 
   renderArchiveGrid();
@@ -389,6 +229,7 @@ function showGameView() {
   state.view = "game";
   document.getElementById("menu-view").classList.remove("visible");
   document.getElementById("archive-view").classList.remove("visible");
+  document.getElementById("rooms-view").classList.remove("visible");
   document.getElementById("game-view").classList.add("visible");
 }
 
@@ -416,6 +257,7 @@ function startDailyGame(dateKey = formatDateKey(new Date())) {
     }
     updateHud();
     renderSummary();
+    if (window.CasolovRooms) window.CasolovRooms.onDailyFinished(dateKey, state.guesses);
     return;
   }
 
@@ -965,6 +807,12 @@ function finishGameSession() {
       savePersistedState();
       updateTopbarStreak();
     }
+  }
+
+  const roomsBox = document.getElementById("summary-rooms");
+  if (roomsBox) roomsBox.hidden = true;
+  if (state.mode === "daily" && state.activeDateKey && window.CasolovRooms) {
+    window.CasolovRooms.onDailyFinished(state.activeDateKey, state.guesses);
   }
 
   playFinale(() => {
@@ -1911,4 +1759,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const open = document.querySelector(".modal-backdrop.visible");
     if (open) closeModal(open.id);
   });
+
+  // Zasebne sobe (rooms.js)
+  if (window.CasolovRooms) window.CasolovRooms.init();
 });

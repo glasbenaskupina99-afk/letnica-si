@@ -6564,3 +6564,7 @@ const SLOVENIAN_EVENTS = [
     explanation: "Boris Pahor je umrl 30. maja 2022."
   }
 ];
+
+// Za strežnik (ES modul) tudi kot lastnost globalnega objekta
+globalThis.SLOVENIAN_ERAS = SLOVENIAN_ERAS;
+globalThis.SLOVENIAN_EVENTS = SLOVENIAN_EVENTS;

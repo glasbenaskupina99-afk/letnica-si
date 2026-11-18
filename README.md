@@ -18,10 +18,22 @@ Interaktivna dnevna igra slovenske zgodovine po vzoru **Eraly.io**.
 - **Zbirka 13 mejnikov**, ki se odklenejo ob preletu, **koledar izzivov** in **statistika** z napredkom ter natančnostjo po obdobjih.
 - Temna in pergamentna svetla tema (tudi z dnevnim nebom), podpora za zmanjšano gibanje in bralnike zaslona.
 
+## 👥 Zasebne sobe
+- Ustvari sobo, pošlji povezavo `…/#soba-KODA` prijateljem in vsak dan primerjajte, kdo je priletel najdlje.
+- **Brez prijave:** vzdevek in skrivni ključ si zapomni brskalnik.
+- Rezultat dnevnega izziva se po igri pošlje sam; **strežnik točke izračuna sam** iz odgovorov.
+- Rezultate prijateljev za izbrani dan vidiš šele, ko ta dan odigraš sam. Poleg dneva je še lestvica zadnjih 7 dni.
+- Namestitev: glej [DEPLOY.md](DEPLOY.md).
+
 ## 📂 Zgradba projekta
+
+Datoteke igre so v mapi `public/`, strežnik v `worker/`.
 - `index.html` — Vstopni meni, igralni oder s 60fps Canvas časoplovom, arhiv dni in statistika
 - `style.css` — Oblikovni sistem »kinematografski atlas«: temna in pergamentna svetla tema, Fraunces + Inter, steklene površine, sij v barvi obdobja, animacije in odzivna postavitev
 - `events.js` — Baza **588 dogodkov** slovenske zgodovine v 5 kronoloških sklopih (vsak najmanj 100), vključno z **rojstvi in smrtmi pomembnih Slovencev** (`6 n. št. – 2025`)
 - `scene.js` — `EralySceneRenderer`: kinematografski 60fps HiDPI Canvas polet (večplastna paralaksa, warp zvezde, letnice stoletij, prehodi obdobij, zlati polet, odometer letnice)
 - `audio.js` — Sintetizirani zvočni učinki (Web Audio) in vibracija
+- `core.js` — Skupno jedro (izbor dnevnih dogodkov, točkovanje), ki ga uporabljata igra in strežnik
+- `rooms.js` — Vmesnik zasebnih sob
+- `worker/index.js`, `migrations/`, `wrangler.toml` — Cloudflare Worker z bazo D1 (API za sobe)
 - `app.js` — Igralni pogon, 20-sekundni odštevalnik in zaporedje razkritja rezultata po pristanku

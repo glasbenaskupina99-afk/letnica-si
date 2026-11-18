@@ -1,0 +1,17 @@
+# Časolov — Cloudflare Worker (igra + API za zasebne sobe)
+name = "casolov"
+main = "worker/index.js"
+compatibility_date = "2025-06-01"
+
+# Statične datoteke igre (index.html, app.js, …) streže isti Worker.
+# Mapa public/ vsebuje samo datoteke igre.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "casolov"
+database_id = "b42037e2-38fc-4587-af32-50b6adfbd8bf"
+migrations_dir = "migrations"
