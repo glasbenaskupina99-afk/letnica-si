@@ -4164,6 +4164,116 @@ button {
   }
 }
 
+/* ==================== OGLASI IN SPONZORJI ==================== */
+.ad-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.ad-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.ad-body {
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+/* Rezerviran prostor, da se stran med nalaganjem oglasa ne premakne */
+.ad-mode-adsense .ad-body {
+  min-height: 250px;
+  background: var(--surface-2);
+  border: 1px dashed var(--line);
+}
+
+.ad-summary {
+  margin-bottom: 10px;
+}
+
+.modal-card .ad-slot {
+  margin-bottom: 0;
+}
+
+.sponsor-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.2s ease, transform 0.2s var(--ease-out);
+}
+
+a.sponsor-card:hover {
+  border-color: var(--gold-line);
+  transform: translateY(-1px);
+}
+
+.sponsor-logo {
+  height: 40px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+}
+
+.sponsor-text {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.sponsor-name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.sponsor-card.rail {
+  flex-direction: column;
+  text-align: center;
+  padding: 18px 12px;
+}
+
+/* Pokončna pasova ob strani: lepljiva, poravnana z vrhom igre */
+.ad-rails {
+  display: none;
+}
+
+@media (min-width: 1320px) {
+  .ad-rails:not([hidden]) {
+    display: block;
+  }
+  .ad-rail {
+    position: fixed;
+    top: 86px;
+    width: 160px;
+    margin: 0;
+    z-index: 5;
+  }
+  .ad-rail.left {
+    left: calc(50% - 470px - 24px - 160px);
+  }
+  .ad-rail.right {
+    right: calc(50% - 470px - 24px - 160px);
+  }
+  .ad-rail.ad-mode-adsense .ad-body {
+    min-height: 600px;
+  }
+}
+
+body.no-ads .ad-slot,
+body.no-ads .ad-rails {
+  display: none !important;
+}
+
 /* ==================== DOSTOPNOST ==================== */
 .sr-only {
   position: absolute;

@@ -211,6 +211,8 @@
         </div>
       </div>
 
+      <aside class="ad-slot ad-menu" data-ad="menu" aria-label="Oglas" hidden></aside>
+
       <ol class="how-steps">
         <li>
           <span class="how-num">1</span>
@@ -438,6 +440,7 @@
             <span class="btn-label">Kopiraj besedilo</span>
           </button>
         </div>
+        <aside class="ad-slot ad-summary" data-ad="summary" aria-label="Oglas" hidden></aside>
         <button type="button" class="btn-secondary-action full" id="btn-summary-play-more">
           <svg class="ic"><use href="#i-shuffle" /></svg>
           Nova prosta igra
@@ -491,9 +494,16 @@
         </button>
       </div>
       <div class="archive-grid" id="archive-grid"></div>
+      <aside class="ad-slot ad-page" data-ad="page" aria-label="Oglas" hidden></aside>
     </section>
 
   </main>
+
+  <!-- Stranska oglasna pasova (le na širokih zaslonih) -->
+  <div class="ad-rails" id="ad-rails" hidden>
+    <aside class="ad-slot ad-rail left" data-ad="railLeft" aria-label="Oglas" hidden></aside>
+    <aside class="ad-slot ad-rail right" data-ad="railRight" aria-label="Oglas" hidden></aside>
+  </div>
 
   <!-- ==================== MODAL: STATISTIKA ==================== -->
   <div class="modal-backdrop" id="modal-stats" role="dialog" aria-modal="true" aria-label="Statistika">
@@ -532,6 +542,7 @@
 
       <h4 class="modal-subhead">Porazdelitev doseženih let</h4>
       <div id="stats-distribution"></div>
+      <aside class="ad-slot ad-page" data-ad="page" aria-label="Oglas" hidden></aside>
     </div>
   </div>
 
@@ -548,6 +559,7 @@
         </button>
       </div>
       <div class="collection-grid" id="collection-grid"></div>
+      <aside class="ad-slot ad-page" data-ad="page" aria-label="Oglas" hidden></aside>
     </div>
   </div>
 
@@ -590,5 +602,6 @@
   <script src="scene.js"></script>
   <script src="app.js"></script>
   <script src="rooms.js"></script>
+  <script src="ads.js"></script>
 </body>
 </html>

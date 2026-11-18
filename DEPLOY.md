@@ -48,3 +48,42 @@ Novo migracijo dodaj v `migrations/` (npr. `0002_….sql`) in jo uveljavi z
 V nadzorni plošči Workerja: **Settings → Domains & Routes → Add → Custom domain**.
 Če spremeniš naslov, ostanejo sobe in rezultati enaki; igralci morajo le odpreti
 nov naslov (ključ igralca je shranjen v brskalniku za vsak naslov posebej).
+
+## Oglasi in sponzorji
+
+Mesta za oglase so pripravljena, a **izklopljena**: dokler jih ne vklopiš, na
+strani ne zasedejo prostora. Nastavitve so na vrhu `public/ads.js`
+(`CASOLOV_ADS_CONFIG`).
+
+Mesta (oglasi se nikoli ne prikažejo med vprašanjem, odštevanjem ali poletom):
+
+| Mesto | Kje | Velikost |
+| --- | --- | --- |
+| `summary` | povzetek po igri, pod gumboma za deljenje | odzivna |
+| `menu` | vstopni meni, pod paneli | odzivna |
+| `page` | dno koledarja, statistike in zbirke | odzivna |
+| `railLeft`, `railRight` | lepljiva pasova ob strani, le na oknih širših od 1320 px | 160 × 600 |
+
+### Sponzor (brez piškotkov in pasice za soglasje)
+
+1. Logotip shrani v `public/` (npr. `public/sponzor.png`).
+2. V `public/ads.js` nastavi `mode: "sponsor"` in izpolni `sponsor`
+   (`name`, `url`, `logo`, po želji `showInRails: true`).
+3. Namesti znova (`npx wrangler deploy` ali commit, če je povezan GitHub).
+
+### Google AdSense
+
+1. Ustvari račun AdSense in dodaj svojo domeno (AdSense ne sprejme naslova
+   `*.workers.dev`; potrebuješ lastno domeno).
+2. V `public/` dodaj datoteko `ads.txt` z vrstico, ki ti jo pokaže AdSense, npr.
+   `google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0`.
+3. Ustvari oglasne enote (Oglasi → Po oglasnih enotah → Prikazni oglasi):
+   tri **odzivne** (summary, menu, page) in dve s **fiksno velikostjo 160 × 600**
+   (railLeft, railRight).
+4. V `public/ads.js` nastavi `mode: "adsense"`, `client` (`ca-pub-…`) in ID-je enot.
+5. **Soglasje (obvezno v EU):** v AdSense → Zasebnost in sporočila vklopi
+   sporočilo za soglasje po GDPR (Googlova certificirana platforma). Skripta
+   AdSense ga nato prikaže sama.
+6. Dopolni izjavo o zasebnosti (oglasi uporabljajo piškotke tretjih oseb).
+
+Za način brez oglasov (npr. prihodnji šolski način) pokliči `CasolovAds.suppress(true)`.
