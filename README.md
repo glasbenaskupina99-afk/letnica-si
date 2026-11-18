@@ -3,7 +3,7 @@
 Interaktivna dnevna igra slovenske zgodovine po vzoru **Eraly.io**.
 
 ## 🛸 Kako deluje igra?
-- **Dnevni izziv brez ponavljanja:** vsak dan je iz vsakega sklopa izbran en dogodek; v 100-dnevnem ciklu pride na vrsto vsak dogodek sklopa natanko enkrat, med dvema ponovitvama pa je vedno vsaj 51 dni.
+- **Dnevni izziv brez ponavljanja:** vsak dan je iz vsakega sklopa izbran en dogodek; v vsakem ciklu (toliko dni, kolikor ima sklop dogodkov) pride na vrsto vsak dogodek sklopa natanko enkrat, med dvema ponovitvama pa je vedno vsaj pol cikla.
 - **Popotovanje od leta `0` do leta `2026`:** Tvoj časoplov s popotnikom štarta v **letu 0**. V vsaki igri dobiš **5 zgodovinskih dogodkov** iz slovenske zgodovine (od rimske Emone in Karantanije do osamosvojitve in sodobne Slovenije).
 - **⏱️ 20 sekund na vprašanje:** Za vsak dogodek imaš natanko **20 sekund**, da vpišeš letnico. Če čas poteče brez odgovora, motor časoplova obstane (`0 točk`, `+0 let premika`).
 - **60fps animacija poleta skozi 5 zgodovinskih dob:** Po vsakem odgovoru časoplov poleti čez drsečo pokrajino slovenskih zgodovinskih mejnikov (*Rimska Emona*, *Knežji kamen*, *Brižinski spomeniki*, *Blejski otok*, *Grad Celjskih grofov*, *Trubarjev Katekizem*, *Južna železnica*, *Aljažev stolp*, *Plečnikova Ljubljana*, *Samostojna Slovenija 1991* ➔ *Portal 2026*).
@@ -21,7 +21,7 @@ Interaktivna dnevna igra slovenske zgodovine po vzoru **Eraly.io**.
 ## 📂 Zgradba projekta
 - `index.html` — Vstopni meni, igralni oder s 60fps Canvas časoplovom, arhiv dni in statistika
 - `style.css` — Oblikovni sistem »kinematografski atlas«: temna in pergamentna svetla tema, Fraunces + Inter, steklene površine, sij v barvi obdobja, animacije in odzivna postavitev
-- `events.js` — Baza **500 dogodkov** slovenske zgodovine, **100 v vsakem od 5 kronoloških sklopov** (`6 n. št. – 2025`)
+- `events.js` — Baza **588 dogodkov** slovenske zgodovine v 5 kronoloških sklopih (vsak najmanj 100), vključno z **rojstvi in smrtmi pomembnih Slovencev** (`6 n. št. – 2025`)
 - `scene.js` — `EralySceneRenderer`: kinematografski 60fps HiDPI Canvas polet (večplastna paralaksa, warp zvezde, letnice stoletij, prehodi obdobij, zlati polet, odometer letnice)
 - `audio.js` — Sintetizirani zvočni učinki (Web Audio) in vibracija
 - `app.js` — Igralni pogon, 20-sekundni odštevalnik in zaporedje razkritja rezultata po pristanku
