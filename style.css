@@ -1398,6 +1398,22 @@ button {
   color: var(--gold);
 }
 
+.timer-bar-card.tense .timer-chip {
+  border-color: color-mix(in srgb, var(--red) 55%, transparent);
+  background: var(--red-soft);
+  animation: chipShake 0.5s ease-in-out infinite;
+}
+
+.timer-bar-card.tense .timer-progress-track {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--red) 35%, transparent), 0 0 14px color-mix(in srgb, var(--red) 40%, transparent);
+}
+
+@keyframes chipShake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(-1.5px) rotate(-2deg); }
+  75% { transform: translateX(1.5px) rotate(2deg); }
+}
+
 .timer-Display.danger {
   color: var(--red);
   animation: pulseFast 0.45s infinite alternate;
@@ -2906,6 +2922,36 @@ button {
   }
   .archive-grid {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar-inner {
+    padding: 9px 10px;
+    gap: 8px;
+  }
+  .brand {
+    gap: 7px;
+  }
+  .brand-title h1 {
+    font-size: 17px;
+  }
+  .nav-actions {
+    gap: 4px;
+  }
+  .icon-btn {
+    height: 32px;
+    padding: 0 7px;
+    gap: 4px;
+  }
+  .icon-btn.icon-only,
+  #btn-back-menu,
+  #btn-open-stats {
+    width: 32px;
+  }
+  .icon-btn .ic {
+    width: 16px;
+    height: 16px;
   }
 }
 

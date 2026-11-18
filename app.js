@@ -32,12 +32,33 @@ const state = {
 let gameScene = null;
 let menuScene = null;
 
+const audio = window.LetnicaAudio || null;
+const canvasVisible = { menu: true, game: true };
+
+function observeCanvasVisibility() {
+  if (!("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      const key = en.target.id === "menu-preview-canvas" ? "menu" : "game";
+      canvasVisible[key] = en.isIntersecting;
+    });
+  });
+  ["menu-preview-canvas", "eraly-game-canvas"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) io.observe(el);
+  });
+}
+
+// Platno riše le, ko je vidno (varčevanje z baterijo); med poletom vedno,
+// sicer se pristanek in razkritje rezultata ne bi sprožila.
 function startAnimationLoop() {
   function loop(now) {
-    if (state.view === "menu" && menuScene) {
-      menuScene.step(now);
-    } else if (state.view === "game" && gameScene) {
-      gameScene.step(now);
+    if (!document.hidden) {
+      if (state.view === "menu" && menuScene && canvasVisible.menu) {
+        menuScene.step(now);
+      } else if (state.view === "game" && gameScene && (canvasVisible.game || gameScene.isFlying)) {
+        gameScene.step(now);
+      }
     }
     requestAnimationFrame(loop);
   }
@@ -418,6 +439,9 @@ function stopRoundTimer() {
     clearInterval(state.timerInterval);
     state.timerInterval = null;
   }
+  if (gameScene) gameScene.tension = 0;
+  const timerCard = document.getElementById("timer-bar-card");
+  if (timerCard) timerCard.classList.remove("tense");
 }
 
 function startRoundTimer() {
@@ -434,6 +458,7 @@ function startRoundTimer() {
   fillEl.style.width = "100%";
 
   state.roundDeadline = performance.now() + ROUND_TIME_LIMIT_MS;
+  let lastTickSecond = null;
 
   state.timerInterval = setInterval(() => {
     const remainingMs = Math.max(0, state.roundDeadline - performance.now());
@@ -442,6 +467,15 @@ function startRoundTimer() {
 
     displayEl.textContent = `${remainingSec} s`;
     fillEl.style.width = `${pct}%`;
+
+    // Zadnjih 5 sekund: tiktakanje, zadnje 4 sekunde še rdeč utrip neba
+    const wholeSec = Math.ceil(remainingMs / 1000);
+    if (wholeSec <= 5 && wholeSec > 0 && wholeSec !== lastTickSecond) {
+      lastTickSecond = wholeSec;
+      if (audio) audio.tick(wholeSec <= 3);
+    }
+    if (gameScene) gameScene.tension = remainingMs <= 4000 ? Math.min(1, (4000 - remainingMs) / 4000 + 0.25) : 0;
+    timerCard.classList.toggle("tense", remainingMs <= 4000);
 
     if (remainingMs <= 4000) {
       displayEl.className = "timer-Display danger";
@@ -556,6 +590,7 @@ function handleRoundTimeout() {
 
   const ev = state.events[state.currentRound];
   const prevYear = state.journeyYear;
+  if (audio) audio.timeout();
 
   const guessRecord = {
     eventId: ev.id,
@@ -585,6 +620,7 @@ function submitCurrentGuess() {
     yearInput.focus();
     yearInput.style.borderColor = "var(--red)";
     restartAnimation(yearInput, "shake");
+    if (audio) audio.error();
     setTimeout(() => {
       yearInput.style.borderColor = "";
     }, 600);
@@ -773,6 +809,10 @@ function revealRoundResult(guessRecord, ev, prevYear, newJourneyYear, roundIdx) 
   resPanel.classList.remove("in-flight");
   void resPanel.offsetWidth;
   resPanel.classList.add("revealed");
+  if (audio && !guessRecord.timedOut && !PREFERS_REDUCED_MOTION) {
+    setTimeout(() => audio.pin(), 420);
+    setTimeout(() => audio.pin(), 1180);
+  }
 }
 
 function advanceToNextRound() {
@@ -1020,6 +1060,34 @@ document.addEventListener("DOMContentLoaded", () => {
   menuScene = new EralySceneRenderer("menu-preview-canvas", true);
   gameScene = new EralySceneRenderer("eraly-game-canvas", false);
   startAnimationLoop();
+  observeCanvasVisibility();
+
+  // Brskalniki dovolijo zvok šele po prvi interakciji uporabnika
+  const unlockAudio = () => {
+    if (audio) audio.unlock();
+    window.removeEventListener("pointerdown", unlockAudio);
+    window.removeEventListener("keydown", unlockAudio);
+  };
+  window.addEventListener("pointerdown", unlockAudio);
+  window.addEventListener("keydown", unlockAudio);
+
+  const soundBtn = document.getElementById("btn-sound-toggle");
+  const syncSoundBtn = () => {
+    const on = audio ? audio.enabled : false;
+    document.getElementById("sound-icon").setAttribute("href", on ? "#i-sound" : "#i-mute");
+    soundBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    soundBtn.title = on ? "Izklopi zvok in vibracijo" : "Vklopi zvok in vibracijo";
+    soundBtn.setAttribute("aria-label", soundBtn.title);
+  };
+  if (soundBtn) {
+    if (!audio) soundBtn.hidden = true;
+    syncSoundBtn();
+    soundBtn.addEventListener("click", () => {
+      if (!audio) return;
+      audio.setEnabled(!audio.enabled);
+      syncSoundBtn();
+    });
+  }
 
   // Ob odprtju prikaži Vstopni meni
   showMenuView();

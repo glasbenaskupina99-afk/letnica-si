@@ -59,6 +59,11 @@ const ridge = (t) => {
   return v * v;
 };
 
+const sfx = (name, ...args) => {
+  const a = typeof window !== "undefined" && window.LetnicaAudio;
+  if (a && typeof a[name] === "function") a[name](...args);
+};
+
 // Asimetrična krivulja poleta: kratek silovit pospešek, daljši mehak pristanek
 function easeFlight(p) {
   const q = Math.pow(p, 0.82);
@@ -169,6 +174,7 @@ class EralySceneRenderer {
     this.flash = 0;
     this.flashColor = [255, 255, 255];
     this.eraBanner = null;
+    this.tension = 0; // 0..1 napetost zadnjih sekund odštevalnika
     this.landmarkPulse = {};
     this.arrival = null;
     this.propellerAngle = 0;
@@ -323,7 +329,7 @@ class EralySceneRenderer {
     this.updateDomCounters(yearVal, 0);
   }
 
-  triggerFlight(fromYear, toYear, { isExact = false, isTimeout = false } = {}, onArrive = null) {
+  triggerFlight(fromYear, toYear, { isExact = false, isTimeout = false, duration = null, silentBadge = false } = {}, onArrive = null) {
     const gain = Math.max(0, toYear - fromYear);
     this.fromYear = fromYear;
     this.targetYear = toYear;
@@ -335,8 +341,11 @@ class EralySceneRenderer {
     this.arrival = null;
     this.flightKind = isTimeout || gain <= 0 ? "stall" : isExact ? "golden" : "normal";
 
+    this.tension = 0;
     if (PREFERS_REDUCED_MOTION) {
       this.flightDuration = 650;
+    } else if (duration) {
+      this.flightDuration = duration;
     } else if (this.flightKind === "stall") {
       this.flightDuration = 1500;
     } else {
@@ -357,8 +366,10 @@ class EralySceneRenderer {
       this.shake = 0.8;
     }
 
+    if (!this.isPreview) sfx("launch", this.flightKind);
+
     const d = this.dom;
-    if (!d || !d.overlay) return;
+    if (!d || !d.overlay || silentBadge) return;
     d.stage.classList.toggle("golden-flight", this.flightKind === "golden");
     d.stage.classList.toggle("stall-flight", this.flightKind === "stall");
     d.viewport.classList.add("is-flying");
@@ -464,7 +475,10 @@ class EralySceneRenderer {
     this.shake *= Math.exp(-dt / 210);
     this.propellerAngle += dt * (this.isFlying && this.flightKind === "stall" ? 0.008 : 0.02 + this.speed * 0.06);
 
-    if (this.isFlying && !this.isPreview) this.updateDomCounters(this.displayYear, this.speed);
+    if (this.isFlying && !this.isPreview) {
+      this.updateDomCounters(this.displayYear, this.speed);
+      sfx("speed", this.flightKind === "stall" ? 0.15 : this.speed);
+    }
 
     this.spawnEffects(now, dt);
     this.drawFrame(now, dt);
@@ -472,12 +486,16 @@ class EralySceneRenderer {
 
   detectCrossings(fromY, toY, now) {
     LANDMARKS.forEach((lm) => {
-      if (fromY < lm.year && toY >= lm.year) this.landmarkPulse[lm.type] = now;
+      if (fromY < lm.year && toY >= lm.year) {
+        this.landmarkPulse[lm.type] = now;
+        if (!this.isPreview) sfx("landmark");
+      }
     });
     if (this.isPreview) return;
     ERA_GATES.forEach((g) => {
       if (fromY < g.year && toY >= g.year) {
         this.eraBanner = { code: g.code, name: g.name, t0: now };
+        sfx("eraGate");
         this.flash = Math.max(this.flash, 0.45);
         this.flashColor = this.flightKind === "golden" ? [255, 230, 160] : [190, 230, 255];
         this.shake = Math.max(this.shake, 0.5);
@@ -491,6 +509,7 @@ class EralySceneRenderer {
     const kind = this.flightKind;
     this.arrival = { t0: now, kind };
     this.goldenTarget = 0;
+    if (!this.isPreview) sfx("land", kind);
 
     const sx = this.shipBaseX + this.shipDX;
     const sy = this.shipY(now);
@@ -780,6 +799,16 @@ class EralySceneRenderer {
     // 16. Blisk
     if (this.flash > 0.01) {
       ctx.fillStyle = rgba(this.flashColor, this.flash * 0.55);
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // 16b. Napetost zadnjih sekund: utripajoč rdeč rob
+    if (this.tension > 0.01 && !this.isFlying) {
+      const pulse = 0.55 + 0.45 * Math.sin(now * 0.012);
+      const tg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7);
+      tg.addColorStop(0, "rgba(239,68,68,0)");
+      tg.addColorStop(1, `rgba(239,68,68,${0.6 * this.tension * pulse})`);
+      ctx.fillStyle = tg;
       ctx.fillRect(0, 0, W, H);
     }
 

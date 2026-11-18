@@ -37,6 +37,8 @@
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5L8 5.5Z"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></symbol>
   </svg>
 
   <div class="bg-aurora" aria-hidden="true"></div>
@@ -70,6 +72,9 @@
         </button>
         <button type="button" class="icon-btn icon-only" id="btn-open-rules" title="Kako igrati">
           <svg class="ic"><use href="#i-help" /></svg>
+        </button>
+        <button type="button" class="icon-btn icon-only" id="btn-sound-toggle" title="Izklopi zvok in vibracijo" aria-pressed="true">
+          <svg class="ic"><use id="sound-icon" href="#i-sound" /></svg>
         </button>
         <button type="button" class="icon-btn icon-only" id="btn-theme-toggle" title="Preklopi temno/svetlo temo">
           <svg class="ic"><use id="theme-icon" href="#i-sun" /></svg>
@@ -496,6 +501,7 @@
   </div>
 
   <script src="events.js"></script>
+  <script src="audio.js"></script>
   <script src="scene.js"></script>
   <script src="app.js"></script>
 </body>
