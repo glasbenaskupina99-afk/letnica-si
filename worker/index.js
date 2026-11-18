@@ -7,6 +7,7 @@
 
 import "../public/events.js";
 import "../public/core.js";
+import { archiveIndex, archiveDay, sitemap } from "./pages.js";
 
 const Core = globalThis.CasolovCore;
 
@@ -228,8 +229,65 @@ async function leaveRoom(request, env, code) {
   return json({ ok: true });
 }
 
-// Lestvica sobe za izbrani dan in zadnjih 7 dni do vključno tega dne.
-// Podrobnosti dneva so skrite, dokler gledalec tega dne ne odigra sam.
+// Začetek koledarskega tedna (ponedeljek) in meseca za dani dan
+function weekStartKey(key) {
+  const [y, m, d] = key.split("-").map(Number);
+  const dow = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // 0 = ponedeljek
+  return shiftDateKey(key, -dow);
+}
+
+function monthStartKey(key) {
+  return key.slice(0, 8) + "01";
+}
+
+// Seštevek rezultatov članov sobe v obdobju [from, to]
+async function periodTotals(env, code, from, to) {
+  const rows = await env.DB.prepare(
+    `SELECT r.player_id, COUNT(*) AS days, SUM(r.points) AS points, SUM(r.reached_year) AS years,
+            SUM(CASE WHEN r.reached_year = 2026 THEN 1 ELSE 0 END) AS landings
+       FROM results r JOIN room_members m ON m.player_id = r.player_id AND m.room_code = ?
+      WHERE r.date_key BETWEEN ? AND ?
+      GROUP BY r.player_id`
+  )
+    .bind(code, from, to)
+    .all();
+  return new Map(rows.results.map((r) => [r.player_id, r]));
+}
+
+function standings(members, totals, viewerId) {
+  return members
+    .map((m) => {
+      const w = totals.get(m.id);
+      return {
+        id: m.id,
+        name: m.name,
+        isYou: m.id === viewerId,
+        days: w ? w.days : 0,
+        points: w ? w.points : 0,
+        avgYear: w ? Math.round(w.years / w.days) : null,
+        landings: w ? w.landings : 0
+      };
+    })
+    .sort((a, b) => b.points - a.points || b.days - a.days || a.name.localeCompare(b.name, "sl"));
+}
+
+// Zmagovalec zaključenega obdobja: največ točk; ob izenačenju si zmago delijo
+function periodWinner(rows, from, to) {
+  const played = rows.filter((r) => r.days > 0);
+  if (played.length === 0) return null;
+  const best = played[0].points;
+  return {
+    from,
+    to,
+    points: best,
+    names: played.filter((r) => r.points === best).map((r) => r.name),
+    youWon: played.some((r) => r.points === best && r.isYou)
+  };
+}
+
+// Lestvica sobe za izbrani dan, tekoči teden in mesec ter zmagovalca
+// preteklega tedna in meseca. Podrobnosti dneva so skrite, dokler gledalec
+// tega dne ne odigra sam.
 async function roomBoard(request, env, code, url) {
   const player = await getPlayer(request, env);
   const room = await findRoom(env, code);
@@ -238,14 +296,22 @@ async function roomBoard(request, env, code, url) {
 
   const date = url.searchParams.get("date") || new Date().toISOString().slice(0, 10);
   if (!isValidDateKey(date)) throw new HttpError(400, "Datum mora biti v obliki LLLL-MM-DD.");
-  const weekFrom = shiftDateKey(date, -6);
 
-  const members = await env.DB.prepare(
-    `SELECT p.id, p.name FROM room_members m JOIN players p ON p.id = m.player_id
-      WHERE m.room_code = ? ORDER BY m.joined_at`
-  )
-    .bind(code)
-    .all();
+  const weekFrom = weekStartKey(date);
+  const monthFrom = monthStartKey(date);
+  const prevWeekTo = shiftDateKey(weekFrom, -1);
+  const prevWeekFrom = weekStartKey(prevWeekTo);
+  const prevMonthTo = shiftDateKey(monthFrom, -1);
+  const prevMonthFrom = monthStartKey(prevMonthTo);
+
+  const members = (
+    await env.DB.prepare(
+      `SELECT p.id, p.name FROM room_members m JOIN players p ON p.id = m.player_id
+        WHERE m.room_code = ? ORDER BY m.joined_at`
+    )
+      .bind(code)
+      .all()
+  ).results;
 
   const dayRows = await env.DB.prepare(
     `SELECT r.player_id, r.reached_year, r.points, r.exact_count, r.emojis
@@ -255,21 +321,17 @@ async function roomBoard(request, env, code, url) {
     .bind(code, date)
     .all();
 
-  const weekRows = await env.DB.prepare(
-    `SELECT r.player_id, COUNT(*) AS days, SUM(r.points) AS points, SUM(r.reached_year) AS years,
-            SUM(CASE WHEN r.reached_year = 2026 THEN 1 ELSE 0 END) AS landings
-       FROM results r JOIN room_members m ON m.player_id = r.player_id AND m.room_code = ?
-      WHERE r.date_key BETWEEN ? AND ?
-      GROUP BY r.player_id`
-  )
-    .bind(code, weekFrom, date)
-    .all();
+  const [weekT, monthT, prevWeekT, prevMonthT] = await Promise.all([
+    periodTotals(env, code, weekFrom, date),
+    periodTotals(env, code, monthFrom, date),
+    periodTotals(env, code, prevWeekFrom, prevWeekTo),
+    periodTotals(env, code, prevMonthFrom, prevMonthTo)
+  ]);
 
   const byDay = new Map(dayRows.results.map((r) => [r.player_id, r]));
-  const byWeek = new Map(weekRows.results.map((r) => [r.player_id, r]));
   const viewerPlayed = byDay.has(player.id);
 
-  const day = members.results
+  const day = members
     .map((m) => {
       const r = byDay.get(m.id);
       const base = { id: m.id, name: m.name, isYou: m.id === player.id, played: !!r };
@@ -281,28 +343,22 @@ async function roomBoard(request, env, code, url) {
       return (b.points ?? 0) - (a.points ?? 0) || a.name.localeCompare(b.name, "sl");
     });
 
-  const week = members.results
-    .map((m) => {
-      const w = byWeek.get(m.id);
-      return {
-        id: m.id,
-        name: m.name,
-        isYou: m.id === player.id,
-        days: w ? w.days : 0,
-        points: w ? w.points : 0,
-        avgYear: w ? Math.round(w.years / w.days) : null,
-        landings: w ? w.landings : 0
-      };
-    })
-    .sort((a, b) => b.points - a.points || b.days - a.days || a.name.localeCompare(b.name, "sl"));
+  const week = standings(members, weekT, player.id);
+  const month = standings(members, monthT, player.id);
 
   return json({
     room: { code: room.code, name: room.name, isOwner: room.owner_id === player.id },
     date,
     weekFrom,
+    monthFrom,
     viewerPlayed,
     day,
-    week
+    week,
+    month,
+    winners: {
+      week: periodWinner(standings(members, prevWeekT, player.id), prevWeekFrom, prevWeekTo),
+      month: periodWinner(standings(members, prevMonthT, player.id), prevMonthFrom, prevMonthTo)
+    }
   });
 }
 
@@ -371,6 +427,11 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api/")) {
+      const path = url.pathname.replace(/\/+$/, "") || "/";
+      if (path === "/arhiv") return archiveIndex(Core);
+      const day = path.match(/^\/arhiv\/(\d{1,5})$/);
+      if (day) return archiveDay(Core, Number(day[1]));
+      if (path === "/sitemap.xml") return sitemap(Core);
       return env.ASSETS.fetch(request);
     }
     try {

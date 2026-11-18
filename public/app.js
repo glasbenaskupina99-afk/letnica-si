@@ -26,7 +26,9 @@ const state = {
   dailyHistory: {},
   streak: 0,
   lastCompletedDate: null,
-  unlocked: [] // tipi odklenjenih mejnikov (zbirka)
+  unlocked: [], // tipi odklenjenih mejnikov (zbirka)
+  achievements: {}, // id dosežka -> čas odklepa
+  freeplayTotal: 0 // vse odigrane proste igre
 };
 
 let gameScene = null;
@@ -157,6 +159,8 @@ function loadPersistedState() {
     if (parsed.lastCompletedDate) state.lastCompletedDate = parsed.lastCompletedDate;
     if (Array.isArray(parsed.unlocked)) state.unlocked = parsed.unlocked;
     if (parsed.freeplay && typeof parsed.freeplay.count === "number") state.freeplay = parsed.freeplay;
+    if (parsed.achievements && typeof parsed.achievements === "object") state.achievements = parsed.achievements;
+    if (typeof parsed.freeplayTotal === "number") state.freeplayTotal = parsed.freeplayTotal;
     pruneDailyHistory();
   } catch (err) {
     console.warn("Napaka pri branju shranjenega stanja:", err);
@@ -198,7 +202,9 @@ function savePersistedState() {
         streak: state.streak,
         lastCompletedDate: state.lastCompletedDate,
         unlocked: state.unlocked,
-        freeplay: state.freeplay
+        freeplay: state.freeplay,
+        achievements: state.achievements,
+        freeplayTotal: state.freeplayTotal
       })
     );
   } catch (err) {
@@ -881,6 +887,12 @@ function finishGameSession() {
     }
   }
 
+  if (state.mode === "freeplay") {
+    state.freeplayTotal += 1;
+    savePersistedState();
+  }
+  const freshAchievements = checkAchievements(state.guesses);
+
   const roomsBox = document.getElementById("summary-rooms");
   if (roomsBox) roomsBox.hidden = true;
   if (state.mode === "daily" && state.activeDateKey && window.CasolovRooms) {
@@ -893,6 +905,7 @@ function finishGameSession() {
       confetti({ particleCount: reachedYear === 2026 ? 180 : 80, spread: 75, origin: { y: 0.55 }, colors: reachedYear === 2026 ? gold : undefined });
     }
     renderSummary();
+    announceAchievements(freshAchievements);
   });
 }
 
@@ -1452,6 +1465,7 @@ function renderStatsModal() {
   document.getElementById("st-avg").textContent = avgYear;
   document.getElementById("st-best").textContent = bestYear;
   document.getElementById("st-streak").textContent = state.streak;
+  renderAchievements();
 
   // 1) Doseženo leto v zadnjih 14 odigranih dnevih (stolpci, en odtenek)
   const recent = entries.slice(-14);
@@ -1606,6 +1620,98 @@ function openCollection(focusType) {
 }
 
 // ============================================================================
+// DOSEŽKI: odklenejo se ob koncu igre, shranjeni so v tej napravi
+// ============================================================================
+const isExactGuess = (g) => g && !g.timedOut && g.diff === 0;
+
+const ACHIEVEMENTS = [
+  { id: "first-flight", icon: "🛫", name: "Prvi polet", desc: "Odigraj svoj prvi dnevni izziv.", test: (c) => c.daily.length >= 1 },
+  { id: "daily-10", icon: "🗓️", name: "Stalni potnik", desc: "Odigraj 10 dnevnih izzivov.", test: (c) => c.daily.length >= 10 },
+  { id: "daily-50", icon: "📚", name: "Kronist", desc: "Odigraj 50 dnevnih izzivov.", test: (c) => c.daily.length >= 50 },
+  { id: "streak-3", icon: "🔥", name: "Na ognju", desc: "Dnevni niz 3 dni zapored.", test: (c) => c.streak >= 3 },
+  { id: "streak-7", icon: "⚡", name: "Teden v časoplovu", desc: "Dnevni niz 7 dni zapored.", test: (c) => c.streak >= 7 },
+  { id: "streak-30", icon: "🌙", name: "Mesec brez premora", desc: "Dnevni niz 30 dni zapored.", test: (c) => c.streak >= 30 },
+  { id: "exact-1", icon: "🎯", name: "Zadetek v nulo", desc: "Prvič zadeni točno letnico.", test: (c) => c.anyExact },
+  { id: "exact-3", icon: "🏹", name: "Ostrostrelec", desc: "V eni igri zadeni vsaj 3 letnice točno.", test: (c) => c.maxExactInGame >= 3 },
+  { id: "year-1800", icon: "🕯️", name: "Do pomladi narodov", desc: "V dnevnem izzivu prileti vsaj do leta 1800.", test: (c) => c.bestYear >= 1800 },
+  { id: "year-1950", icon: "📻", name: "V 20. stoletje", desc: "V dnevnem izzivu prileti vsaj do leta 1950.", test: (c) => c.bestYear >= 1950 },
+  { id: "year-2026", icon: "🏆", name: "Pristanek v sedanjosti", desc: "Prileti do leta 2026 — vseh 5 letnic točno.", test: (c) => c.bestYear >= 2026 },
+  { id: "all-close", icon: "🧭", name: "Vsestranski", desc: "V eni igri vseh 5 letnic zgreši za največ 10 let.", test: (c) => c.allCloseGame },
+  { id: "archivist", icon: "🗄️", name: "Arhivar", desc: "Iz koledarja odigraj 5 zamujenih izzivov.", test: (c) => c.catchUps >= 5 },
+  { id: "freeplay-10", icon: "🔀", name: "Trening dela mojstra", desc: "Odigraj 10 prostih iger.", test: (c) => c.freeplayTotal >= 10 },
+  { id: "collector", icon: "🏛️", name: "Zbiratelj mejnikov", desc: "Odkleni vse mejnike v zbirki.", test: (c) => c.unlockedAll }
+];
+
+function achievementContext(lastGuesses) {
+  const daily = Object.entries(state.dailyHistory);
+  const games = daily.map(([, e]) => e.guesses || []);
+  if (lastGuesses && lastGuesses.length === 5) games.push(lastGuesses);
+  const exactCounts = games.map((gs) => gs.filter(isExactGuess).length);
+  return {
+    daily,
+    streak: state.streak,
+    anyExact: exactCounts.some((n) => n > 0),
+    maxExactInGame: exactCounts.length ? Math.max(...exactCounts) : 0,
+    bestYear: daily.length ? Math.max(...daily.map(([, e]) => reachedYearOf(e))) : 0,
+    allCloseGame: games.some((gs) => gs.length === 5 && gs.every((g) => !g.timedOut && g.diff !== null && g.diff <= 10)),
+    catchUps: daily.filter(([key, e]) => e.completedAt && formatDateKey(new Date(e.completedAt)) > key).length,
+    freeplayTotal: state.freeplayTotal,
+    unlockedAll: state.unlocked.length >= LANDMARKS.length
+  };
+}
+
+// Vrne na novo odklenjene dosežke (in jih shrani)
+function checkAchievements(lastGuesses) {
+  const ctx = achievementContext(lastGuesses);
+  const fresh = ACHIEVEMENTS.filter((a) => !state.achievements[a.id] && a.test(ctx));
+  if (fresh.length === 0) return [];
+  const now = Date.now();
+  fresh.forEach((a) => (state.achievements[a.id] = now));
+  savePersistedState();
+  return fresh;
+}
+
+function announceAchievements(list) {
+  list = list || [];
+  // Največ trije oblački naenkrat; ostale povzame zadnji
+  if (list.length > 3) {
+    const rest = list.length - 2;
+    list = [...list.slice(0, 2), { icon: "✨", name: `in še ${rest} ${rest === 3 || rest === 4 ? "dosežki" : "dosežkov"}` }];
+  }
+  list.forEach((a, i) =>
+    setTimeout(() => {
+      showToast(
+        `<span class="toast-k">Nov dosežek</span><strong>${a.icon} ${a.name}</strong>`,
+        () => openStatsAt("stats-achievements-head")
+      );
+      if (audio && i === 0) audio.unlockLandmark();
+    }, 1200 + i * 900)
+  );
+}
+
+function renderAchievements() {
+  const box = document.getElementById("stats-achievements");
+  if (!box) return;
+  const done = ACHIEVEMENTS.filter((a) => state.achievements[a.id]).length;
+  const head = document.getElementById("achievements-count");
+  if (head) head.textContent = `${done} / ${ACHIEVEMENTS.length}`;
+  box.innerHTML = ACHIEVEMENTS.map((a) => {
+    const at = state.achievements[a.id];
+    return `<div class="ach${at ? " done" : ""}" title="${a.desc}">
+        <span class="ach-icon" aria-hidden="true">${at ? a.icon : "🔒"}</span>
+        <span class="ach-text"><strong>${a.name}</strong><span>${a.desc}</span></span>
+      </div>`;
+  }).join("");
+}
+
+function openStatsAt(sectionId) {
+  renderStatsModal();
+  openModal("modal-stats");
+  const el = document.getElementById(sectionId);
+  if (el) setTimeout(() => el.scrollIntoView({ block: "start", behavior: "smooth" }), 250);
+}
+
+// ============================================================================
 // OBVESTILA (TOAST) IN MODALNA OKNA
 // ============================================================================
 function showToast(html, onClick) {
@@ -1644,6 +1750,7 @@ function closeModal(id) {
 // ============================================================================
 document.addEventListener("DOMContentLoaded", () => {
   loadPersistedState();
+  checkAchievements(null); // obstoječim igralcem tiho odkleni že izpolnjene dosežke
   applyTheme();
   updateTopbarStreak();
 

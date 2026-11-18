@@ -18,6 +18,7 @@ const CasolovRooms = (() => {
   let invitePreview = null;
   let current = { code: null, date: null };
   let busy = false;
+  let standingsTab = "week"; // "week" | "month"
 
   // ------------------------------------------------------------------ shramba
   function readStore(key, fallback) {
@@ -371,9 +372,10 @@ const CasolovRooms = (() => {
       })
       .join("");
 
-    const weekRows = board.week
-      .map(
-        (r, i) => `<tr class="${r.isYou ? "you" : ""}">
+    const tableRows = (rows) =>
+      rows
+        .map(
+          (r, i) => `<tr class="${r.isYou ? "you" : ""}">
           <td class="num">${r.days ? i + 1 + "." : ""}</td>
           <td>${esc(r.name)}${r.isYou ? " <em>(ti)</em>" : ""}</td>
           <td class="num">${r.days}</td>
@@ -381,11 +383,38 @@ const CasolovRooms = (() => {
           <td class="num">${r.avgYear ?? "–"}</td>
           <td class="num">${r.landings}</td>
         </tr>`
-      )
-      .join("");
+        )
+        .join("");
 
-    const [, fm, fd] = board.weekFrom.split("-").map(Number);
-    const [, tm, td] = date.split("-").map(Number);
+    const shortDate = (key) => {
+      const [, m, d] = key.split("-").map(Number);
+      return `${d}. ${m}.`;
+    };
+    const monthName = (key) =>
+      ["januar", "februar", "marec", "april", "maj", "junij", "julij", "avgust", "september", "oktober", "november", "december"][
+        Number(key.slice(5, 7)) - 1
+      ];
+    const monthRange = (fromKey) => `${monthName(fromKey)} ${fromKey.slice(0, 4)}`;
+
+    const periods = {
+      week: { label: "Ta teden", range: `${shortDate(board.weekFrom)} – ${shortDate(date)}`, rows: board.week },
+      month: { label: "Ta mesec", range: `${monthRange(board.monthFrom)}, do ${shortDate(date)}`, rows: board.month }
+    };
+    if (!periods[standingsTab]) standingsTab = "week";
+    const activePeriod = periods[standingsTab];
+
+    const winnerCard = (w, kind) => {
+      if (!w) return "";
+      const who = w.names.length > 1 ? "Zmagovalci" : "Zmagovalec";
+      const title = kind === "week" ? `${who} tedna ${shortDate(w.from)} – ${shortDate(w.to)}` : `${who} meseca: ${monthRange(w.from)}`;
+      const names = w.names.map(esc).join(", ");
+      return `<div class="room-winner${w.youWon ? " you" : ""}">
+          <span class="room-winner-icon" aria-hidden="true">${kind === "week" ? "🏆" : "👑"}</span>
+          <span class="room-winner-text"><span>${title}</span><strong>${names}${w.youWon ? " — čestitke!" : ""}</strong></span>
+          <span class="room-winner-pts">${w.points} tč</span>
+        </div>`;
+    };
+    const winnersHtml = winnerCard(board.winners?.week, "week") + winnerCard(board.winners?.month, "month");
 
     root.innerHTML = `
       <button type="button" class="rooms-link back" id="rooms-back"><svg class="ic"><use href="#i-arrow" /></svg>Vse sobe</button>
@@ -428,13 +457,25 @@ const CasolovRooms = (() => {
       </section>
 
       <section class="panel room-week">
-        <h3 class="rooms-h">Zadnjih 7 dni <span>${fd}. ${fm}. – ${td}. ${tm}.</span></h3>
+        ${winnersHtml ? `<div class="room-winners">${winnersHtml}</div>` : ""}
+        <div class="room-standings-head">
+          <div class="room-tabs" role="tablist" aria-label="Lestvica">
+            ${Object.entries(periods)
+              .map(
+                ([key, p]) =>
+                  `<button type="button" role="tab" class="room-tab${key === standingsTab ? " active" : ""}" data-period="${key}" aria-selected="${key === standingsTab}">${p.label}</button>`
+              )
+              .join("")}
+          </div>
+          <span class="room-range">${esc(activePeriod.range)}</span>
+        </div>
         <div class="room-week-scroll">
           <table class="room-week-table">
             <thead><tr><th class="num">#</th><th>Igralec</th><th class="num">Dni</th><th class="num">Točke</th><th class="num">Povp. leto</th><th class="num">2026</th></tr></thead>
-            <tbody>${weekRows}</tbody>
+            <tbody>${tableRows(activePeriod.rows)}</tbody>
           </table>
         </div>
+        <p class="rooms-fine">Zmaga, kdo zbere največ točk v koledarskem tednu (pon–ned) oziroma mesecu. Vsak odigran dan šteje.</p>
       </section>
 
       <div class="room-foot">
@@ -452,6 +493,12 @@ const CasolovRooms = (() => {
       current = { code: null, date: null };
       render();
     });
+    root.querySelectorAll(".room-tab").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        standingsTab = btn.dataset.period;
+        render();
+      })
+    );
     $("room-prev").addEventListener("click", () => {
       current.date = shiftKey(date, -1);
       render();

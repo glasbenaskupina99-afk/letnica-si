@@ -10,7 +10,7 @@ directory = "./public"
 binding = "ASSETS"
 # Skozi Worker gre le API sob; statične datoteke streže Cloudflare neposredno
 # (brezplačno in brez omejitve, ne štejejo v dnevno omejitev zahtev)
-run_worker_first = ["/api/*"]
+run_worker_first = ["/api/*", "/arhiv", "/arhiv/*", "/sitemap.xml"]
 
 [[d1_databases]]
 binding = "DB"
