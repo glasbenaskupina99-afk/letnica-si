@@ -1610,59 +1610,41 @@ button {
   font-weight: 600;
 }
 
-.year-input-group {
+.year-dial {
   display: flex;
-  align-items: stretch;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.step-btn {
-  width: 54px;
-  flex: none;
-  border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--text-2);
-  font-size: 14px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.18s var(--ease-out);
-}
-
-.step-btn:hover {
-  color: var(--gold);
-  border-color: var(--gold-line);
-  background: var(--gold-soft);
-}
-
-.step-btn:active {
-  transform: scale(0.94);
-}
-
-.year-input-wrapper {
-  flex: 1;
-  min-width: 0;
+  justify-content: center;
+  margin-bottom: 14px;
 }
 
 .year-input {
   width: 100%;
-  height: 76px;
+  max-width: 340px;
+  height: 84px;
   background: var(--field);
   border: 1.5px solid var(--line-strong);
-  border-radius: var(--r-md);
-  color: var(--text);
+  border-radius: var(--r-lg);
+  color: var(--text-3);
   font-family: var(--font-display);
-  font-size: 46px;
+  font-size: 56px;
   font-weight: 900;
   text-align: center;
   font-variant-numeric: tabular-nums lining-nums;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.06em;
+  caret-color: var(--gold);
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.25s ease;
-  -moz-appearance: textfield;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease, color 0.2s ease;
+}
+
+.year-input.filled {
+  color: var(--gold-2);
+}
+
+[data-theme="light"] .year-input.filled {
+  color: var(--gold);
+}
+
+.year-input.outside {
+  color: var(--orange);
 }
 
 .year-input::-webkit-outer-spin-button,
@@ -1677,67 +1659,14 @@ button {
 }
 
 .year-input::placeholder {
-  font-family: var(--font-ui);
-  font-size: 17px;
-  font-weight: 600;
   color: var(--text-3);
-  letter-spacing: 0;
+  opacity: 0.45;
+  letter-spacing: 0.12em;
 }
 
 /* Drsnik — razpon obdobja vprašanja, obarvan v barvi obdobja */
 .timeline-assist {
-  margin-bottom: 22px;
-}
-
-.slider-wrap {
-  position: relative;
-  padding-top: 34px;
-}
-
-.slider-bubble {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  min-width: 52px;
-  padding: 4px 9px 5px;
-  border-radius: 9px;
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums lining-nums;
-  color: var(--gold-ink);
-  background: linear-gradient(135deg, #fde68a, #f5b942);
-  box-shadow: 0 6px 16px -6px rgba(245, 158, 11, 0.7);
-  pointer-events: none;
-  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
-}
-
-.slider-bubble::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -5px;
-  width: 10px;
-  height: 10px;
-  transform: translateX(-50%) rotate(45deg);
-  background: #f5b942;
-  border-radius: 2px;
-  z-index: -1;
-}
-
-.slider-bubble.idle {
-  color: var(--text-2);
-  background: var(--surface-3);
-  box-shadow: none;
-}
-
-.slider-bubble.idle::after {
-  background: var(--surface-3);
-}
-
-.slider-bubble.outside {
-  opacity: 0.55;
+  margin-bottom: 10px;
 }
 
 .timeline-slider {
@@ -1746,14 +1675,15 @@ button {
   appearance: none;
   display: block;
   width: 100%;
-  height: 26px;
+  height: 34px;
   background: transparent;
   cursor: pointer;
+  touch-action: pan-y;
 }
 
 .timeline-slider::-webkit-slider-runnable-track {
-  height: 8px;
-  border-radius: 8px;
+  height: 12px;
+  border-radius: 12px;
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--era) 85%, #fff 0%) 0 var(--fill), transparent var(--fill)),
     color-mix(in srgb, var(--era) 18%, var(--surface-3));
@@ -1761,22 +1691,23 @@ button {
 }
 
 .timeline-slider::-moz-range-track {
-  height: 8px;
-  border-radius: 8px;
+  height: 12px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--era) 18%, var(--surface-3));
 }
 
 .timeline-slider::-moz-range-progress {
-  height: 8px;
-  border-radius: 8px;
+  height: 12px;
+  border-radius: 12px;
   background: var(--era);
 }
 
 .timeline-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 24px;
-  height: 24px;
-  margin-top: -8px;
+  width: 30px;
+  height: 30px;
+  margin-top: -9px;
+  cursor: grab;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #ffffff, #fde68a 60%, #f5b942);
   border: 3px solid #1a1203;
@@ -1785,8 +1716,8 @@ button {
 }
 
 .timeline-slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #ffffff, #fde68a 60%, #f5b942);
   border: 3px solid #1a1203;
@@ -1800,7 +1731,7 @@ button {
 .timeline-ticks {
   position: relative;
   height: 22px;
-  margin: 6px 12px 0;
+  margin: 4px 15px 0;
   font-size: 11px;
   color: var(--text-3);
   font-weight: 700;
@@ -4187,20 +4118,9 @@ button {
   .round-result {
     padding: 18px;
   }
-  .year-input-group {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-  }
-  .year-input-wrapper {
-    grid-column: 1 / -1;
-    order: -1;
-  }
-  .step-btn {
-    width: auto;
-    height: 44px;
-  }
   .year-input {
-    height: 70px;
+    height: 72px;
+    font-size: 48px;
   }
   .btn-submit-year {
     font-size: 15px;
@@ -4814,3 +4734,152 @@ body.no-ads .ad-rails {
   font-variant-numeric: tabular-nums;
 }
 
+
+/* Drsnik, ki ga igralec še ni premaknil: ročica je bleda, napolnitve ni */
+.timeline-slider.untouched::-webkit-slider-runnable-track {
+  background: color-mix(in srgb, var(--era) 18%, var(--surface-3));
+}
+.timeline-slider.untouched::-webkit-slider-thumb {
+  opacity: 0.55;
+  animation: thumbPulse 1.6s ease-in-out infinite;
+}
+@keyframes thumbPulse {
+  50% { box-shadow: 0 0 0 2px #f5b942, 0 0 0 9px rgba(245, 185, 66, 0.18); }
+}
+
+.guess-hint {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-3);
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+
+.guess-hint kbd {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 6px;
+  margin: 0 1px;
+  border-radius: 5px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.hint-touch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .hint-desk { display: none; }
+  .hint-touch { display: inline; }
+}
+html.touch .hint-desk { display: none; }
+html.touch .hint-touch { display: inline; }
+
+/* ==================== RAČUNALNIK: vse na enem zaslonu ====================
+   Vprašanje levo, vnos letnice desno; nebo nad njima nekoliko nižje. */
+@media (min-width: 900px) {
+  #active-round-area {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    gap: 12px;
+    align-items: stretch;
+  }
+  #active-round-area > .event-card {
+    grid-column: 1;
+    grid-row: 1;
+    margin-bottom: 0;
+  }
+  #active-round-area > .guess-panel,
+  #active-round-area > .round-result {
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 0;
+  }
+  .guess-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .event-card .event-title {
+    font-size: 27px;
+  }
+}
+
+/* Razlaga pod vprašanjem je samo za računalnik */
+.event-explanation {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .event-explanation:not([hidden]) {
+    display: block;
+    margin: 16px 0 0;
+    animation: archiveRevealIn 0.4s var(--ease-out);
+  }
+  .round-result .explanation-card,
+  .round-result .visual-timeline-compare,
+  .round-result .vt-legend {
+    display: none !important;
+  }
+  .round-result {
+    padding: 18px 20px 20px;
+  }
+  .round-result .journey-step-banner {
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .round-result .jsb-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 20px;
+  }
+  .round-result .jsb-title {
+    font-size: 16px;
+  }
+  .round-result .jsb-sub {
+    font-size: 12.5px;
+  }
+  .round-result .result-stat-box {
+    padding: 10px 8px;
+  }
+  .round-result .result-stat-label {
+    letter-spacing: 0.06em;
+    font-size: 10px;
+  }
+  .round-result .result-stat-val {
+    font-size: 26px;
+  }
+  .round-result .result-stat-val.points-earned {
+    font-size: 17px;
+  }
+  .round-result .diff-banner {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+  .round-result .btn-next-round {
+    height: 52px;
+  }
+}
+
+@keyframes archiveRevealIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (min-width: 900px) and (max-height: 960px) {
+  .eraly-canvas-Viewport {
+    height: 240px;
+  }
+}
+
+@media (min-width: 900px) and (max-height: 780px) {
+  .eraly-canvas-Viewport {
+    height: 190px;
+  }
+  .container {
+    padding-top: 14px;
+  }
+}

@@ -341,49 +341,51 @@
 
           <h2 class="event-title" id="event-title">Nalaganje dogodka...</h2>
           <p class="event-prompt" id="event-prompt"></p>
+          <div class="explanation-card event-explanation" id="event-explanation" hidden>
+            <h4><svg class="ic"><use href="#i-scroll" /></svg>Zgodovinsko ozadje</h4>
+            <p id="event-explanation-text"></p>
+          </div>
         </article>
 
         <div class="guess-panel" id="guess-panel">
           <div class="guess-label-row">
-            <span class="guess-label">Katerega leta se je to zgodilo?</span>
+            <span class="guess-label">Katerega leta?</span>
             <span class="guess-range-note" id="guess-range-note">1 – 2026 n. št.</span>
           </div>
 
-          <div class="year-input-group">
-            <button type="button" class="step-btn" data-step="-10">−10</button>
-            <button type="button" class="step-btn" data-step="-1">−1</button>
-            <div class="year-input-wrapper">
-              <input
-                type="number"
-                id="year-input"
-                class="year-input"
-                min="1"
-                max="2026"
-                inputmode="numeric"
-                placeholder="Letnica"
-                aria-label="Letnica dogodka"
-                autocomplete="off"
-              />
-            </div>
-            <button type="button" class="step-btn" data-step="1">+1</button>
-            <button type="button" class="step-btn" data-step="10">+10</button>
+          <div class="year-dial">
+            <input
+              type="text"
+              id="year-input"
+              class="year-input"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="4"
+              placeholder="????"
+              aria-label="Letnica dogodka"
+              aria-describedby="guess-hint"
+              autocomplete="off"
+              spellcheck="false"
+            />
           </div>
 
           <div class="timeline-assist">
-            <div class="slider-wrap">
-              <div class="slider-bubble idle" id="slider-bubble" aria-hidden="true">?</div>
-              <input
-                type="range"
-                id="timeline-slider"
-                class="timeline-slider"
-                min="1"
-                max="2026"
-                value="1000"
-                aria-label="Drsnik za izbiro letnice"
-              />
-            </div>
+            <input
+              type="range"
+              id="timeline-slider"
+              class="timeline-slider untouched"
+              min="1"
+              max="2026"
+              value="1000"
+              aria-label="Drsnik za izbiro letnice"
+            />
             <div class="timeline-ticks" id="timeline-ticks"></div>
           </div>
+
+          <p class="guess-hint" id="guess-hint">
+            <span class="hint-desk">Vpiši ali povleci · <kbd>↑</kbd><kbd>↓</kbd> ±1 · <kbd>Shift</kbd> ±10</span>
+            <span class="hint-touch">Povleci drsnik ali tapni letnico in jo vpiši</span>
+          </p>
 
           <button type="button" class="btn-submit-year" id="btn-submit-year">
             <svg class="ic"><use href="#i-airship" /></svg>

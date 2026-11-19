@@ -498,7 +498,7 @@ function renderCurrentRound() {
   const eraObj = SLOVENIAN_ERAS.find((er) => er.id === ev.era) || SLOVENIAN_ERAS[0];
 
   document.getElementById("eraly-stage-card").classList.remove("golden-flight", "stall-flight");
-  document.getElementById("active-round-area").style.display = "block";
+  document.getElementById("active-round-area").style.display = "";
   restartAnimation(document.getElementById("question-event-card"), "card-enter");
   restartAnimation(document.getElementById("guess-panel"), "card-enter");
   document.getElementById("summary-panel").classList.remove("visible");
@@ -514,10 +514,12 @@ function renderCurrentRound() {
 
   const yearInput = document.getElementById("year-input");
   yearInput.value = "";
+  yearInput.classList.remove("filled", "outside");
   configureSliderForEra(eraObj);
 
-  document.getElementById("guess-panel").style.display = "block";
+  document.getElementById("guess-panel").style.display = "";
   document.getElementById("round-result").classList.remove("visible", "in-flight", "revealed");
+  document.getElementById("event-explanation").hidden = true;
 
   startRoundTimer();
 
@@ -533,6 +535,7 @@ function renderCurrentRound() {
 // DRSNIK ZA LETNICO: razpon obdobja vprašanja, lebdeča letnica nad ročico
 // ============================================================================
 const IS_TOUCH = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+if (IS_TOUCH) document.documentElement.classList.add("touch");
 
 function niceTickStep(span) {
   const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500];
@@ -561,15 +564,14 @@ function configureSliderForEra(eraObj) {
     })
     .join("");
 
-  document.getElementById("guess-range-note").textContent = `Drsnik: ${min} – ${max} · vpis: 1 – 2026`;
+  document.getElementById("guess-range-note").textContent = `Obdobje ${min} – ${max}`;
   updateSliderBubble();
 }
 
 function updateSliderBubble() {
   const slider = document.getElementById("timeline-slider");
-  const bubble = document.getElementById("slider-bubble");
   const input = document.getElementById("year-input");
-  if (!slider || !bubble) return;
+  if (!slider || !input) return;
   const min = Number(slider.min);
   const max = Number(slider.max);
   const typed = parseInt(input.value, 10);
@@ -577,13 +579,23 @@ function updateSliderBubble() {
   const val = hasValue ? typed : Number(slider.value);
   const clamped = Math.max(min, Math.min(max, val));
   const pct = max > min ? (clamped - min) / (max - min) : 0;
-  // ročica je široka 24 px — lebdeči napis poravnamo na njeno središče
-  bubble.style.left = `calc(${pct * 100}% + ${12 - pct * 24}px)`;
-  bubble.textContent = hasValue ? String(typed) : "?";
-  bubble.classList.toggle("idle", !hasValue);
-  bubble.classList.toggle("outside", hasValue && (typed < min || typed > max));
   slider.style.setProperty("--fill", `${pct * 100}%`);
+  slider.classList.toggle("untouched", !hasValue);
+  input.classList.toggle("outside", hasValue && (typed < min || typed > max));
+  input.classList.toggle("filled", hasValue);
   slider.setAttribute("aria-valuetext", hasValue ? `Leto ${typed}` : `Leto ${slider.value}`);
+}
+
+// Premik letnice za korak (tipkovnica, kolesce): ostane v razponu 1–2026
+function nudgeYear(step) {
+  const yearInput = document.getElementById("year-input");
+  const slider = document.getElementById("timeline-slider");
+  const curr = parseInt(yearInput.value, 10);
+  // Prazno polje: najprej pokaži trenutni položaj drsnika (sredina obdobja)
+  const next = isNaN(curr) ? Number(slider.value) : Math.max(1, Math.min(2026, curr + step));
+  yearInput.value = String(next);
+  slider.value = next;
+  updateSliderBubble();
 }
 
 // ============================================================================
@@ -803,6 +815,9 @@ function revealRoundResult(guessRecord, ev, prevYear, newJourneyYear, roundIdx) 
   }
 
   document.getElementById("res-explanation").textContent = ev.explanation;
+  // Na računalniku je razlaga pod vprašanjem (levo), rezultat pa desno
+  document.getElementById("event-explanation-text").textContent = ev.explanation;
+  document.getElementById("event-explanation").hidden = false;
 
   const nextBtn = document.getElementById("btn-next-round");
   if (state.currentRound < 4) {
@@ -1833,17 +1848,42 @@ document.addEventListener("DOMContentLoaded", () => {
   const slider = document.getElementById("timeline-slider");
 
   yearInput.addEventListener("input", () => {
-    const v = parseInt(yearInput.value, 10);
-    if (!isNaN(v) && v >= 1 && v <= 2026) {
-      slider.value = v;
-    }
+    const digits = yearInput.value.replace(/\D/g, "").slice(0, 4);
+    if (digits !== yearInput.value) yearInput.value = digits;
+    const v = parseInt(digits, 10);
+    if (!isNaN(v) && v >= 1 && v <= 2026) slider.value = v;
     updateSliderBubble();
+  });
+
+  // Puščice: ±1, s Shift ±10; PageUp/PageDown ±10
+  yearInput.addEventListener("keydown", (e) => {
+    const map = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 10, PageDown: -10 };
+    if (!(e.key in map) || state.roundSubmitted) return;
+    e.preventDefault();
+    nudgeYear(map[e.key] * (e.shiftKey && Math.abs(map[e.key]) === 1 ? 10 : 1));
   });
 
   slider.addEventListener("input", () => {
     yearInput.value = slider.value;
     updateSliderBubble();
   });
+  // Po premiku drsnika ostane fokus na letnici, da tipke in Enter delujejo naprej
+  slider.addEventListener("change", () => {
+    if (!IS_TOUCH) yearInput.focus({ preventScroll: true });
+  });
+
+  // Kolesce miške nad letnico ali drsnikom: ±1 (s Shift ±10)
+  [yearInput, slider].forEach((el) =>
+    el.addEventListener(
+      "wheel",
+      (e) => {
+        if (state.roundSubmitted || state.view !== "game") return;
+        e.preventDefault();
+        nudgeYear((e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 10 : 1));
+      },
+      { passive: false }
+    )
+  );
 
   document.getElementById("timeline-ticks").addEventListener("click", (e) => {
     const tick = e.target.closest("span[data-year]");
@@ -1855,16 +1895,22 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!IS_TOUCH) yearInput.focus();
   });
 
-  document.querySelectorAll(".step-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const step = parseInt(btn.getAttribute("data-step"), 10);
-      const curr = parseInt(yearInput.value, 10) || Number(slider.value);
-      const next = Math.max(1, Math.min(2026, curr + step));
-      yearInput.value = next;
-      slider.value = next;
-      updateSliderBubble();
-      if (!IS_TOUCH) yearInput.focus();
-    });
+  // Številke, natipkane kjerkoli med vprašanjem, gredo v polje za letnico
+  document.addEventListener("keydown", (e) => {
+    if (state.view !== "game" || state.roundSubmitted) return;
+    if (document.activeElement === yearInput || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (document.querySelector(".modal-backdrop.visible")) return;
+    const tag = (document.activeElement && document.activeElement.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (/^[0-9]$/.test(e.key)) {
+      e.preventDefault();
+      yearInput.focus({ preventScroll: true });
+      yearInput.value = (yearInput.value + e.key).slice(-4);
+      yearInput.dispatchEvent(new Event("input"));
+    } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      nudgeYear((e.key === "ArrowUp" ? 1 : -1) * (e.shiftKey ? 10 : 1));
+    }
   });
 
   // Klik na nebo med poletom preskoči animacijo
