@@ -236,6 +236,19 @@
         </div>
       </div>
 
+      <!-- Šolski način (beta): viden samo lastniku, prijavljenemu v /statistika -->
+      <section class="panel school-panel" id="school-panel" hidden>
+        <div class="panel-head">
+          <span class="panel-icon violet"><svg class="ic"><use href="#i-scroll" /></svg></span>
+          <div>
+            <div class="panel-title">Šolski način <span class="beta-tag">beta · vidiš samo ti</span></div>
+            <div class="panel-sub">Vaja po enem obdobju, brez omejitve iger. Za projektor odpri sobo in klikni »Prikaz za projektor«.</div>
+          </div>
+        </div>
+        <div class="school-eras" id="school-eras"></div>
+        <label class="school-toggle"><input type="checkbox" id="school-noads" /> Brez oglasov na tej napravi</label>
+      </section>
+
       <aside class="ad-slot ad-menu" data-ad="menu" aria-label="Oglas" hidden></aside>
 
       <ol class="how-steps">
@@ -343,6 +356,7 @@
           <div class="explanation-card event-explanation" id="event-explanation" hidden>
             <h4><svg class="ic"><use href="#i-scroll" /></svg>Zgodovinsko ozadje</h4>
             <p id="event-explanation-text"></p>
+            <a class="report-link" id="event-report-link" href="mailto:kontakt@casolov.si">Si opazil napako?</a>
           </div>
         </article>
 
@@ -433,6 +447,7 @@
           <div class="explanation-card">
             <h4><svg class="ic"><use href="#i-scroll" /></svg>Zgodovinsko ozadje</h4>
             <p id="res-explanation"></p>
+            <a class="report-link" id="res-report-link" href="mailto:kontakt@casolov.si">Si opazil napako?</a>
           </div>
 
           <button type="button" class="btn-next-round" id="btn-next-round">

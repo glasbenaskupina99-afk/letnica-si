@@ -17,10 +17,10 @@ const LANDMARKS = [
   { year: 1165, name: "Blejski otok", type: "bled", desc: "Cerkev na edinem slovenskem otoku je stoletja romarski cilj.", h: 58 },
   { year: 1436, name: "Celjski grofje", type: "celje", desc: "Rodbina s tremi zlatimi zvezdami se povzpne med državne kneze cesarstva.", h: 78 },
   { year: 1550, name: "Trubarjev Katekizem", type: "trubar", desc: "Katekizem in Abecednik — prvi slovenski tiskani knjigi.", h: 46 },
-  { year: 1689, name: "Valvasorjeva Slava", type: "valvasor", desc: "Slava vojvodine Kranjske, ki jo je Valvasor tiskal na Bogenšperku.", h: 56 },
+  { year: 1689, name: "Valvasorjeva Slava", type: "valvasor", desc: "Slava vojvodine Kranjske: Valvasor jo je pripravil na Bogenšperku, natisnjena je bila v Nürnbergu.", h: 56 },
   { year: 1846, name: "Južna železnica", type: "train", desc: "Južna železnica poveže Dunaj s Trstom čez slovenske dežele.", h: 48 },
   { year: 1895, name: "Aljažev stolp", type: "aljaz", desc: "Župnik Jakob Aljaž na vrh Triglava postavi kovinski stolp.", h: 82 },
-  { year: 1945, name: "Plečnikovo Tromostovje", type: "plecnik", desc: "Tromostovje, del Plečnikove preobrazbe Ljubljane.", h: 40 },
+  { year: 1932, name: "Plečnikovo Tromostovje", type: "plecnik", desc: "Plečnik je stari most v letih 1929–1932 razširil v Tromostovje.", h: 40 },
   { year: 1991, name: "Samostojna Slovenija", type: "slovenija91", desc: "Razglasitev samostojne Republike Slovenije.", h: 76 },
   { year: 2026, name: "CILJ · SEDANJOST", type: "portal2026", desc: "Sedanjost — dosežeš jo le s petimi zadetki v nulo.", h: 92 }
 ];

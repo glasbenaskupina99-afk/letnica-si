@@ -16,6 +16,7 @@ const state = {
   guesses: [],
   roundSubmitted: false,
   freeplay: null, // { date, count } — odigrane proste igre na današnji dan
+  practiceEra: null, // šolski način: vaja samo iz tega obdobja
   journeyYear: 0,
 
   // 25-sekundni odštevalnik
@@ -311,10 +312,50 @@ function showGameView() {
 // ============================================================================
 // ZAGON DNEVNEGA IZZIVA IN PROSTE IGRE
 // ============================================================================
+// ============================================================================
+// NADALJEVANJE DNEVNEGA IZZIVA: osvežitev strani ne začne izziva znova
+// ============================================================================
+const DAILY_PROGRESS_KEY = "casolov_daily_progress";
+
+function readDailyProgress() {
+  try {
+    return JSON.parse(localStorage.getItem(DAILY_PROGRESS_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function saveDailyProgress(roundStartedAt) {
+  try {
+    const prev = readDailyProgress();
+    const sameRound = prev && prev.dateKey === state.activeDateKey && prev.round === state.currentRound;
+    localStorage.setItem(
+      DAILY_PROGRESS_KEY,
+      JSON.stringify({
+        dateKey: state.activeDateKey,
+        round: state.currentRound,
+        roundStartedAt: roundStartedAt ?? (sameRound ? prev.roundStartedAt : Date.now()),
+        guesses: state.guesses
+      })
+    );
+  } catch {
+    /* zasebni način: nadaljevanje ni mogoče */
+  }
+}
+
+function clearDailyProgress() {
+  try {
+    localStorage.removeItem(DAILY_PROGRESS_KEY);
+  } catch {
+    /* ni pomembno */
+  }
+}
+
 function startDailyGame(dateKey = formatDateKey(new Date())) {
   stopRoundTimer();
   cancelFinaleSilently();
   state.mode = "daily";
+  state.practiceEra = null;
   state.activeDateKey = dateKey;
   state.activeDayNumber = getDayNumberFromDateKey(dateKey);
   state.events = getDailyEventsForDateKey(dateKey);
@@ -336,6 +377,31 @@ function startDailyGame(dateKey = formatDateKey(new Date())) {
     return;
   }
 
+  // Začet, a ne končan izziv tega dne: nadaljuj, kjer je igralec ostal
+  const progress = readDailyProgress();
+  const ids = state.events.map((e) => e.id);
+  if (
+    progress &&
+    progress.dateKey === dateKey &&
+    Array.isArray(progress.guesses) &&
+    progress.guesses.length < 5 &&
+    progress.guesses.every((g, i) => g && g.eventId === ids[i])
+  ) {
+    state.guesses = progress.guesses;
+    const last = state.guesses[state.guesses.length - 1];
+    state.journeyYear = last && typeof last.targetYearAfter === "number" ? last.targetYearAfter : 0;
+    state.currentRound = state.guesses.length;
+    state.roundSubmitted = false;
+    showGameView();
+    if (gameScene) gameScene.setInstantYear(state.journeyYear, false);
+    updateHud();
+    // Isto vprašanje kot pred osvežitvijo: ura teče naprej od takrat
+    const sameRound = progress.round === state.currentRound && typeof progress.roundStartedAt === "number";
+    renderCurrentRound(sameRound ? progress.roundStartedAt : null);
+    if (state.guesses.length > 0 || sameRound) showToast(`<span class="toast-k">Nadaljuješ izziv</span><strong>Vprašanje ${state.currentRound + 1} / 5</strong>`);
+    return;
+  }
+
   state.currentRound = 0;
   state.guesses = [];
   state.roundSubmitted = false;
@@ -345,6 +411,62 @@ function startDailyGame(dateKey = formatDateKey(new Date())) {
   if (gameScene) gameScene.setInstantYear(0, false);
   updateHud();
   renderCurrentRound();
+}
+
+// Šolski način: 5 naključnih dogodkov iz enega obdobja (brez prihodnjih dnevnih)
+function startPracticeGame(eraId) {
+  stopRoundTimer();
+  cancelFinaleSilently();
+  const today = new Date();
+  const reserved = new Set();
+  for (let k = 0; k <= FREEPLAY_SPOILER_DAYS; k++) {
+    getDailyEventsForDateKey(formatDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + k))).forEach((e) => reserved.add(e.id));
+  }
+  const pool = SLOVENIAN_EVENTS.filter((e) => e.era === eraId && !reserved.has(e.id));
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  state.mode = "freeplay";
+  state.practiceEra = eraId;
+  state.activeDateKey = null;
+  state.events = pool.slice(0, 5);
+  state.currentRound = 0;
+  state.guesses = [];
+  state.roundSubmitted = false;
+  state.journeyYear = 0;
+  showGameView();
+  if (gameScene) gameScene.setInstantYear(0, false);
+  updateHud();
+  renderCurrentRound();
+}
+
+function enableSchoolMode() {
+  window.CASOLOV_OWNER = true;
+  const panel = document.getElementById("school-panel");
+  if (!panel) return;
+  panel.hidden = false;
+  document.getElementById("school-eras").innerHTML = SLOVENIAN_ERAS.map(
+    (e) => `<button type="button" class="school-era" data-era="${e.id}"><b>${e.code}.</b> ${e.name}<span>${e.rangeText}</span></button>`
+  ).join("");
+  panel.querySelectorAll(".school-era").forEach((b) => b.addEventListener("click", () => startPracticeGame(Number(b.dataset.era))));
+  const noAds = document.getElementById("school-noads");
+  let on = false;
+  try {
+    on = localStorage.getItem("casolov_school_noads") === "1";
+  } catch {
+    /* */
+  }
+  noAds.checked = on;
+  if (on && window.CasolovAds) window.CasolovAds.suppress(true);
+  noAds.addEventListener("change", () => {
+    try {
+      localStorage.setItem("casolov_school_noads", noAds.checked ? "1" : "0");
+    } catch {
+      /* */
+    }
+    if (window.CasolovAds) window.CasolovAds.suppress(noAds.checked);
+  });
 }
 
 function startFreeplayGame() {
@@ -359,6 +481,7 @@ function startFreeplayGame() {
   stopRoundTimer();
   cancelFinaleSilently();
   state.mode = "freeplay";
+  state.practiceEra = null;
   state.activeDateKey = null;
   state.events = getFreeplayEvents();
   state.currentRound = 0;
@@ -385,7 +508,7 @@ function stopRoundTimer() {
   if (timerCard) timerCard.classList.remove("tense");
 }
 
-function startRoundTimer() {
+function startRoundTimer(remainingAtStart = ROUND_TIME_LIMIT_MS) {
   stopRoundTimer();
 
   const timerCard = document.getElementById("timer-bar-card");
@@ -398,7 +521,7 @@ function startRoundTimer() {
   displayEl.textContent = `${(ROUND_TIME_LIMIT_MS / 1000).toFixed(1)} s`;
   fillEl.style.width = "100%";
 
-  state.roundDeadline = performance.now() + ROUND_TIME_LIMIT_MS;
+  state.roundDeadline = performance.now() + remainingAtStart;
   let lastTickSecond = null;
 
   state.timerInterval = setInterval(() => {
@@ -493,9 +616,8 @@ function updateHud(popIndex = -1) {
   }
 }
 
-function renderCurrentRound() {
+function renderCurrentRound(resumeStartedAt = null) {
   const ev = state.events[state.currentRound];
-  const eraObj = SLOVENIAN_ERAS.find((er) => er.id === ev.era) || SLOVENIAN_ERAS[0];
 
   document.getElementById("eraly-stage-card").classList.remove("golden-flight", "stall-flight");
   document.getElementById("active-round-area").style.display = "";
@@ -503,7 +625,8 @@ function renderCurrentRound() {
   restartAnimation(document.getElementById("guess-panel"), "card-enter");
   document.getElementById("summary-panel").classList.remove("visible");
 
-  document.body.dataset.era = String(ev.era);
+  // Barva obdobja bi izdala odgovor: med vprašanjem je ozadje nevtralno
+  document.body.dataset.era = "0";
   document.getElementById("event-category-badge").textContent = ev.category;
   document.getElementById("event-region-badge").textContent = ev.region;
   document.getElementById("round-counter-badge").textContent = `Vprašanje ${state.currentRound + 1} / 5`;
@@ -514,13 +637,21 @@ function renderCurrentRound() {
   const yearInput = document.getElementById("year-input");
   yearInput.value = "";
   yearInput.classList.remove("filled", "outside");
-  configureSliderForEra(eraObj);
+  configureSlider();
 
   document.getElementById("guess-panel").style.display = "";
   document.getElementById("round-result").classList.remove("visible", "in-flight", "revealed");
   document.getElementById("event-explanation").hidden = true;
 
-  startRoundTimer();
+  // Dnevni izziv: zapomni si, kdaj se je vprašanje začelo (osvežitev strani ne ponastavi ure)
+  const startedAt = resumeStartedAt ?? Date.now();
+  if (state.mode === "daily") saveDailyProgress(startedAt);
+  const remaining = ROUND_TIME_LIMIT_MS - (Date.now() - startedAt);
+  if (remaining <= 0) {
+    startRoundTimer(0);
+  } else {
+    startRoundTimer(remaining);
+  }
 
   // Na telefonih tipkovnice ne odpremo sami — drsnik in gumbi so dovolj
   if (!IS_TOUCH) {
@@ -536,33 +667,61 @@ function renderCurrentRound() {
 const IS_TOUCH = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
 if (IS_TOUCH) document.documentElement.classList.add("touch");
 
-function niceTickStep(span) {
-  const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500];
-  return steps.find((st) => span / st <= 6) || 500;
+// Drsnik pokriva celoten razpon 1–2026, a ne enakomerno: novejša leta dobijo
+// več prostora, da je drsnik natančen tudi za 20. in 21. stoletje.
+// [od leta, do leta, od položaja, do položaja] — položaj 0–1000
+const SLIDER_SEGMENTS = [
+  [1, 1500, 0, 300],
+  [1500, 1900, 300, 650],
+  [1900, 2026, 650, 1000]
+];
+const SLIDER_TICKS = [1, 1000, 1600, 1900, 1950, 2026];
+
+// Vaja po obdobju (šolski način): drsnik je linearen po razponu obdobja
+function practiceRange() {
+  if (!state.practiceEra) return null;
+  const era = SLOVENIAN_ERAS.find((e) => e.id === state.practiceEra);
+  return era ? [era.minYear, era.maxYear] : null;
 }
 
-function configureSliderForEra(eraObj) {
-  const slider = document.getElementById("timeline-slider");
-  const min = eraObj.minYear;
-  const max = eraObj.maxYear;
-  slider.min = min;
-  slider.max = max;
-  slider.value = Math.round((min + max) / 2);
-
-  const ticksEl = document.getElementById("timeline-ticks");
-  const step = niceTickStep(max - min);
-  const ticks = [min];
-  for (let y = Math.ceil((min + 1) / step) * step; y < max; y += step) {
-    if (y - ticks[ticks.length - 1] >= step * 0.6 && max - y >= step * 0.6) ticks.push(y);
+function yearToPos(year) {
+  const pr = practiceRange();
+  if (pr) return ((Math.max(pr[0], Math.min(pr[1], year)) - pr[0]) / (pr[1] - pr[0])) * 1000;
+  const y = Math.max(1, Math.min(2026, year));
+  for (const [y0, y1, p0, p1] of SLIDER_SEGMENTS) {
+    if (y <= y1) return p0 + ((y - y0) / (y1 - y0)) * (p1 - p0);
   }
-  ticks.push(max);
-  ticksEl.innerHTML = ticks
-    .map((y) => {
-      const pct = ((y - min) / (max - min)) * 100;
-      return `<span data-year="${y}" style="left: ${pct}%">${y}</span>`;
-    })
-    .join("");
+  return 1000;
+}
 
+function posToYear(pos) {
+  const p = Math.max(0, Math.min(1000, Number(pos)));
+  const pr = practiceRange();
+  if (pr) return Math.round(pr[0] + (p / 1000) * (pr[1] - pr[0]));
+  for (const [y0, y1, p0, p1] of SLIDER_SEGMENTS) {
+    if (p <= p1) return Math.round(y0 + ((p - p0) / (p1 - p0)) * (y1 - y0));
+  }
+  return 2026;
+}
+
+function configureSlider() {
+  const slider = document.getElementById("timeline-slider");
+  slider.min = 0;
+  slider.max = 1000;
+  slider.step = 1;
+  slider.value = 500;
+  const pr = practiceRange();
+  let ticks = SLIDER_TICKS;
+  if (pr) {
+    const span = pr[1] - pr[0];
+    const step = [10, 20, 25, 50, 100, 200, 250, 500].find((st) => span / st <= 5) || 500;
+    ticks = [pr[0]];
+    for (let y = Math.ceil((pr[0] + 1) / step) * step; y < pr[1]; y += step) if (y - ticks[ticks.length - 1] >= step * 0.6 && pr[1] - y >= step * 0.6) ticks.push(y);
+    ticks.push(pr[1]);
+  }
+  document.getElementById("timeline-ticks").innerHTML = ticks.map(
+    (y) => `<span data-year="${y}" style="left: ${yearToPos(y) / 10}%">${y}</span>`
+  ).join("");
   updateSliderBubble();
 }
 
@@ -570,18 +729,14 @@ function updateSliderBubble() {
   const slider = document.getElementById("timeline-slider");
   const input = document.getElementById("year-input");
   if (!slider || !input) return;
-  const min = Number(slider.min);
-  const max = Number(slider.max);
   const typed = parseInt(input.value, 10);
   const hasValue = !isNaN(typed);
-  const val = hasValue ? typed : Number(slider.value);
-  const clamped = Math.max(min, Math.min(max, val));
-  const pct = max > min ? (clamped - min) / (max - min) : 0;
-  slider.style.setProperty("--fill", `${pct * 100}%`);
+  const pos = hasValue ? yearToPos(typed) : Number(slider.value);
+  slider.style.setProperty("--fill", `${pos / 10}%`);
   slider.classList.toggle("untouched", !hasValue);
-  input.classList.toggle("outside", hasValue && (typed < min || typed > max));
+  input.classList.toggle("outside", hasValue && (typed < 1 || typed > 2026));
   input.classList.toggle("filled", hasValue);
-  slider.setAttribute("aria-valuetext", hasValue ? `Leto ${typed}` : `Leto ${slider.value}`);
+  slider.setAttribute("aria-valuetext", `Leto ${hasValue ? typed : posToYear(slider.value)}`);
 }
 
 // Premik letnice za korak (tipkovnica, kolesce): ostane v razponu 1–2026
@@ -589,10 +744,10 @@ function nudgeYear(step) {
   const yearInput = document.getElementById("year-input");
   const slider = document.getElementById("timeline-slider");
   const curr = parseInt(yearInput.value, 10);
-  // Prazno polje: najprej pokaži trenutni položaj drsnika (sredina obdobja)
-  const next = isNaN(curr) ? Number(slider.value) : Math.max(1, Math.min(2026, curr + step));
+  // Prazno polje: najprej pokaži leto, na katerem trenutno stoji drsnik
+  const next = isNaN(curr) ? posToYear(slider.value) : Math.max(1, Math.min(2026, curr + step));
   yearInput.value = String(next);
-  slider.value = next;
+  slider.value = yearToPos(next);
   updateSliderBubble();
 }
 
@@ -622,6 +777,7 @@ function handleRoundTimeout() {
   };
 
   state.guesses.push(guessRecord);
+  if (state.mode === "daily") saveDailyProgress();
   presentRoundOutcome(guessRecord, ev, prevYear, prevYear);
 }
 
@@ -671,6 +827,7 @@ function submitCurrentGuess() {
   };
 
   state.guesses.push(guessRecord);
+  if (state.mode === "daily") saveDailyProgress();
   presentRoundOutcome(guessRecord, ev, prevYear, newJourneyYear);
 }
 
@@ -813,9 +970,18 @@ function revealRoundResult(guessRecord, ev, prevYear, newJourneyYear, roundIdx) 
   }
 
   document.getElementById("res-explanation").textContent = ev.explanation;
+  document.body.dataset.era = String(ev.era); // po odgovoru se obarva v barvo obdobja
   // Na računalniku je razlaga pod vprašanjem (levo), rezultat pa desno
   document.getElementById("event-explanation-text").textContent = ev.explanation;
   document.getElementById("event-explanation").hidden = false;
+  // Prijava napake: e-pošta z ID-jem in naslovom dogodka
+  const reportHref =
+    "mailto:kontakt@casolov.si?subject=" +
+    encodeURIComponent(`Napaka v dogodku ${ev.id}: ${ev.title}`) +
+    "&body=" +
+    encodeURIComponent(`Dogodek: ${ev.title}\nLetnica v igri: ${ev.year}\n\nKaj je narobe (po možnosti z virom):\n`);
+  document.getElementById("event-report-link").href = reportHref;
+  document.getElementById("res-report-link").href = reportHref;
 
   const nextBtn = document.getElementById("btn-next-round");
   if (state.currentRound < 4) {
@@ -877,6 +1043,7 @@ function finishGameSession() {
   state.journeyYear = reachedYear;
 
   let isFreshDaily = false;
+  if (state.mode === "daily") clearDailyProgress();
   if (state.mode === "daily" && state.activeDateKey) {
     const alreadySaved = state.dailyHistory[state.activeDateKey];
     isFreshDaily = !alreadySaved;
@@ -907,11 +1074,11 @@ function finishGameSession() {
     }
   }
 
-  if (state.mode === "freeplay") {
+  if (state.mode === "freeplay" && !state.practiceEra) {
     state.freeplayTotal += 1;
     savePersistedState();
   }
-  reportPlayAnonymously(isFreshDaily);
+  if (!state.practiceEra) reportPlayAnonymously(isFreshDaily);
   const freshAchievements = checkAchievements(state.guesses);
 
   const roomsBox = document.getElementById("summary-rooms");
@@ -1672,7 +1839,7 @@ const ACHIEVEMENTS = [
   { id: "exact-3", icon: "🏹", name: "Ostrostrelec", desc: "V eni igri zadeni vsaj 3 letnice točno.", test: (c) => c.maxExactInGame >= 3 },
   { id: "year-1800", icon: "🕯️", name: "Do pomladi narodov", desc: "V dnevnem izzivu prileti vsaj do leta 1800.", test: (c) => c.bestYear >= 1800 },
   { id: "year-1950", icon: "📻", name: "V 20. stoletje", desc: "V dnevnem izzivu prileti vsaj do leta 1950.", test: (c) => c.bestYear >= 1950 },
-  { id: "year-2026", icon: "🏆", name: "Pristanek v sedanjosti", desc: "Prileti do leta 2026 — vseh 5 letnic točno.", test: (c) => c.bestYear >= 2026 },
+  { id: "year-2026", icon: "🏆", name: "Pristanek v sedanjosti", desc: "Prileti do leta 2026 — vseh 5 letnic točno (dnevni izziv ali prosta igra).", test: (c) => c.bestYear >= 2026 || c.perfectGame },
   { id: "all-close", icon: "🧭", name: "Vsestranski", desc: "V eni igri vseh 5 letnic zgreši za največ 10 let.", test: (c) => c.allCloseGame },
   { id: "archivist", icon: "🗄️", name: "Arhivar", desc: "Iz koledarja odigraj 5 zamujenih izzivov.", test: (c) => c.catchUps >= 5 },
   { id: "freeplay-10", icon: "🔀", name: "Trening dela mojstra", desc: "Odigraj 10 prostih iger.", test: (c) => c.freeplayTotal >= 10 },
@@ -1690,6 +1857,8 @@ function achievementContext(lastGuesses) {
     anyExact: exactCounts.some((n) => n > 0),
     maxExactInGame: exactCounts.length ? Math.max(...exactCounts) : 0,
     bestYear: daily.length ? Math.max(...daily.map(([, e]) => reachedYearOf(e))) : 0,
+    // Pristanek v 2026 šteje tudi v prosti igri (5 točnih letnic)
+    perfectGame: games.some((gs) => gs.length === 5 && gs.every(isExactGuess)),
     allCloseGame: games.some((gs) => gs.length === 5 && gs.every((g) => !g.timedOut && g.diff !== null && g.diff <= 10)),
     catchUps: daily.filter(([key, e]) => e.completedAt && formatDateKey(new Date(e.completedAt)) > key).length,
     freeplayTotal: state.freeplayTotal,
@@ -1868,7 +2037,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const digits = yearInput.value.replace(/\D/g, "").slice(0, 4);
     if (digits !== yearInput.value) yearInput.value = digits;
     const v = parseInt(digits, 10);
-    if (!isNaN(v) && v >= 1 && v <= 2026) slider.value = v;
+    if (!isNaN(v) && v >= 1 && v <= 2026) slider.value = yearToPos(v);
     updateSliderBubble();
   });
 
@@ -1881,7 +2050,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   slider.addEventListener("input", () => {
-    yearInput.value = slider.value;
+    yearInput.value = String(posToYear(slider.value));
     updateSliderBubble();
   });
   // Po premiku drsnika ostane fokus na letnici, da tipke in Enter delujejo naprej
@@ -1907,7 +2076,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!tick) return;
     const y = tick.getAttribute("data-year");
     yearInput.value = y;
-    slider.value = y;
+    slider.value = yearToPos(Number(y));
     updateSliderBubble();
     if (!IS_TOUCH) yearInput.focus();
   });
@@ -2009,6 +2178,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Zasebne sobe (rooms.js)
   if (window.CasolovRooms) window.CasolovRooms.init();
+  // Šolski način je za zdaj viden samo lastniku (prijava v /statistika)
+  if (/^https?:$/.test(location.protocol)) {
+    fetch("/api/beta", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && d.owner && enableSchoolMode())
+      .catch(() => {});
+  }
 
   // Povezava iz arhiva: /?izziv=N odpre pretekli dnevni izziv
   const izziv = Number(new URLSearchParams(location.search).get("izziv"));

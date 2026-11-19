@@ -30,6 +30,15 @@ function shiftKey(key, days) {
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
 
+function timingSafeEqual(a, b) {
+  a = String(a);
+  b = String(b);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 async function dailySalt(env, day) {
   const row = await env.DB.prepare("SELECT salt FROM stats_salts WHERE day = ?").bind(day).first();
   if (row) return row.salt;
@@ -41,6 +50,112 @@ async function dailySalt(env, day) {
   await env.DB.prepare("DELETE FROM stats_salts WHERE day < ?").bind(shiftKey(day, -1)).run();
   const again = await env.DB.prepare("SELECT salt FROM stats_salts WHERE day = ?").bind(day).first();
   return again.salt;
+}
+
+async function visitorHash(env, request, day = todayKeyLjubljana()) {
+  const ip = request.headers.get("cf-connecting-ip") || "neznan";
+  return (await sha256(`${ip}|${await dailySalt(env, day)}`)).slice(0, 16);
+}
+
+// Omejitev števila dejanj na obiskovalca na dan (zaščita brezplačne kvote pred boti)
+// Velikodušno, ker si šola ali podjetje lahko deli en IP-naslov
+export const LIMITS_PER_DAY = { player: 60, room: 30, join: 150, freeplay: 200, login: 10 };
+
+export async function rateLimit(env, request, action, HttpError) {
+  const max = LIMITS_PER_DAY[action];
+  if (!max) return;
+  const day = todayKeyLjubljana();
+  const visitor = await visitorHash(env, request, day);
+  const row = await env.DB.prepare(
+    `INSERT INTO rate_limits (day, visitor, action, n) VALUES (?, ?, ?, 1)
+     ON CONFLICT(day, visitor, action) DO UPDATE SET n = n + 1
+     RETURNING n`
+  )
+    .bind(day, visitor, action)
+    .first();
+  if (Math.random() < 0.02) {
+    await env.DB.prepare("DELETE FROM rate_limits WHERE day < ?").bind(shiftKey(day, -2)).run();
+  }
+  if (row && row.n > max) throw new HttpError(429, "Danes je bilo s te povezave preveč zahtevkov. Poskusi znova jutri.");
+}
+
+// ---------------------------------------------------------------- prijava v statistiko
+const COOKIE = "casolov_stats";
+
+function readCookie(request, name) {
+  const header = request.headers.get("cookie") || "";
+  for (const part of header.split(";")) {
+    const [k, ...v] = part.trim().split("=");
+    if (k === name) return decodeURIComponent(v.join("="));
+  }
+  return null;
+}
+
+export async function isStatsOwner(request, env) {
+  const c = readCookie(request, COOKIE);
+  return !!(c && env.STATS_COOKIE_SHA256 && timingSafeEqual(await sha256(c), env.STATS_COOKIE_SHA256));
+}
+
+async function keyIsValid(env, key) {
+  return !!(key && env.STATS_KEY_SHA256 && timingSafeEqual(await sha256(key), env.STATS_KEY_SHA256));
+}
+
+function loginCookieHeader(value, maxAge) {
+  return `${COOKIE}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`;
+}
+
+function loginPage(error = "") {
+  return new Response(
+    `<!DOCTYPE html><html lang="sl"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" /><title>Prijava — Časolov</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #060a14; color: #eef2f8; font: 15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  form { width: min(360px, 90vw); background: #0f1729; border: 1px solid rgba(160,174,200,.2); border-radius: 18px; padding: 26px; }
+  h1 { font-size: 20px; margin: 0 0 14px; } h1 span { color: #f5b942; }
+  input { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 11px; border: 1px solid rgba(160,174,200,.3); background: #060a14; color: #eef2f8; font-size: 16px; }
+  button { width: 100%; margin-top: 12px; padding: 12px; border: 0; border-radius: 11px; background: #f5b942; color: #1a1203; font-weight: 800; font-size: 15px; cursor: pointer; }
+  .err { color: #f87171; margin: 0 0 10px; font-size: 14px; }
+</style></head><body>
+<form method="post" action="/statistika">
+  <h1>Časolov · <span>statistika</span></h1>
+  ${error ? `<p class="err">${esc(error)}</p>` : ""}
+  <input type="password" name="k" placeholder="Ključ" autocomplete="current-password" autofocus required />
+  <button type="submit">Prijava</button>
+</form></body></html>`,
+    { status: error ? 403 : 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" } }
+  );
+}
+
+// GET/POST /statistika: prijava s ključem → piškotek (30 dni); ključ ne ostane v naslovu
+export async function statsRoute(request, env, url, Core, HttpError) {
+  const redirectHome = (cookie) =>
+    new Response(null, {
+      status: 303,
+      headers: { location: "/statistika", "set-cookie": loginCookieHeader(cookie, 60 * 60 * 24 * 30), "cache-control": "no-store" }
+    });
+
+  if (url.searchParams.get("odjava") !== null) {
+    return new Response(null, { status: 303, headers: { location: "/statistika", "set-cookie": loginCookieHeader("", 0) } });
+  }
+
+  let key = null;
+  if (request.method === "POST") {
+    try {
+      await rateLimit(env, request, "login", HttpError);
+    } catch {
+      return loginPage("Preveč poskusov prijave. Poskusi znova jutri.");
+    }
+    const form = await request.formData().catch(() => null);
+    key = form ? String(form.get("k") || "") : "";
+    if (!(await keyIsValid(env, key))) return loginPage("Napačen ključ.");
+  } else if (url.searchParams.get("k")) {
+    key = url.searchParams.get("k");
+    if (!(await keyIsValid(env, key))) return loginPage("Napačen ključ.");
+  }
+  if (key) return redirectHome(await sha256(`casolov-stats-cookie|${key}`));
+
+  if (!(await isStatsOwner(request, env))) return loginPage();
+  return statsPage(env, url, Core);
 }
 
 export async function recordPlay(request, env, Core, json, HttpError) {
@@ -89,8 +204,8 @@ export async function recordPlay(request, env, Core, json, HttpError) {
   const exact = scored.filter((s) => s.d === 0).length;
   const timeouts = scored.filter((s) => s.d === null).length;
 
-  const ip = request.headers.get("cf-connecting-ip") || "neznan";
-  const visitor = (await sha256(`${ip}|${await dailySalt(env, day)}`)).slice(0, 16);
+  if (mode === "freeplay") await rateLimit(env, request, "freeplay", HttpError);
+  const visitor = await visitorHash(env, request, day);
 
   await env.DB.prepare(
     `INSERT OR IGNORE INTO plays (day, mode, challenge_date, visitor, reached_year, points, exact_count, timeouts, answers, created_at)
@@ -107,13 +222,7 @@ export async function recordPlay(request, env, Core, json, HttpError) {
 }
 
 // ---------------------------------------------------------------- zasebna stran
-export async function statsPage(env, url, Core) {
-  const key = url.searchParams.get("k") || "";
-  const ok = env.STATS_KEY_SHA256 && key && (await sha256(key)) === env.STATS_KEY_SHA256;
-  if (!ok) {
-    return new Response("Ni dostopa.", { status: 403, headers: { "content-type": "text/plain; charset=utf-8", "x-robots-tag": "noindex" } });
-  }
-
+async function statsPage(env, url, Core) {
   const today = todayKeyLjubljana();
   const from = shiftKey(today, -29);
 
@@ -270,7 +379,7 @@ export async function statsPage(env, url, Core) {
   .hlabels { display: grid; grid-template-columns: repeat(24, 1fr); gap: 3px; font-size: 10px; color: #8592a8; text-align: center; }
 </style></head>
 <body><main>
-  <h1>Časolov · <span>statistika iger</span></h1>
+  <h1>Časolov · <span>statistika iger</span> <a href="/statistika?odjava" style="float:right;font-size:13px;color:#8592a8;font-weight:500">Odjava</a></h1>
   <p class="muted">Danes je ${fmt(today)}. »Igralci« so različni obiskovalci na dan (iz IP-naslova in dnevno spremenljive vrednosti; IP-naslovi se ne shranjujejo). Isti igralec je na različne dni štet ločeno.</p>
 
   <section class="today">

@@ -49,8 +49,8 @@ function seededRandom(seed) {
 
 // Deterministično premešan vrstni red dogodkov enega sklopa za en »cikel«.
 // Vsak cikel traja toliko dni, kolikor ima sklop dogodkov.
-function shuffledEraOrder(eraId, poolSize, cycle) {
-  const rng = seededRandom(hashString(`LETNICA_SI_ERA_${eraId}_CYCLE_${cycle}`));
+function shuffledEraOrder(eraId, poolSize, cycle, seedTag = "") {
+  const rng = seededRandom(hashString(`LETNICA_SI_ERA_${eraId}_CYCLE_${cycle}${seedTag}`));
   const order = Array.from({ length: poolSize }, (_, i) => i);
   for (let i = poolSize - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
@@ -64,17 +64,17 @@ const eraCycleCache = new Map();
 // Vsak nov cikel nastane iz prejšnjega: dogodki iz prve polovice prejšnjega
 // cikla se premešajo samo med seboj, prav tako tisti iz druge polovice.
 // Tako je med dvema pojavitvama istega dogodka vedno vsaj pol cikla (≥ 51 dni).
-function getEraCycleOrder(eraId, poolSize, cycle) {
-  const key = `${eraId}:${poolSize}:${cycle}`;
+function getEraCycleOrder(eraId, poolSize, cycle, seedTag = "") {
+  const key = `${eraId}:${poolSize}:${cycle}:${seedTag}`;
   if (eraCycleCache.has(key)) return eraCycleCache.get(key);
 
   let order;
   if (cycle <= 0) {
-    order = shuffledEraOrder(eraId, poolSize, cycle);
+    order = shuffledEraOrder(eraId, poolSize, cycle, seedTag);
   } else {
-    const prev = getEraCycleOrder(eraId, poolSize, cycle - 1);
+    const prev = getEraCycleOrder(eraId, poolSize, cycle - 1, seedTag);
     const half = Math.floor(poolSize / 2);
-    const rng = seededRandom(hashString(`LETNICA_SI_ERA_${eraId}_MIX_${cycle}`));
+    const rng = seededRandom(hashString(`LETNICA_SI_ERA_${eraId}_MIX_${cycle}${seedTag}`));
     const shuffle = (arr) => {
       for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(rng() * (i + 1));
@@ -95,21 +95,45 @@ function getDayIndexFromDateKey(dateKey) {
   return Math.round((Date.UTC(y, m - 1, d) - epochUtc) / 86400000);
 }
 
+// ============================================================================
+// NABORI DOGODKOV ZA DNEVNI IZZIV
+// Vsak nabor velja od svojega datuma naprej in vsebuje dogodke z ID do maxId.
+// Ko v events.js dodaš nove dogodke (novi ID-ji: sl_589, sl_590 …), NE spreminjaj
+// obstoječih vrstic: dodaj novo vrstico z datumom v prihodnosti, npr.
+//   { from: "2027-03-01", maxId: 650 }
+// Tako pretekli dnevi (zgodovina igralcev, sobe, arhiv) ostanejo nespremenjeni.
+// ============================================================================
+const DAILY_POOLS = [{ from: "2026-11-18", maxId: 588 }];
+
+function eventIdNumber(ev) {
+  return Number(String(ev.id).replace(/\D/g, "")) || 0;
+}
+
+function poolVersionForDate(dateKey) {
+  let idx = 0;
+  for (let i = 0; i < DAILY_POOLS.length; i++) if (dateKey >= DAILY_POOLS[i].from) idx = i;
+  return idx;
+}
+
 // Dnevni izziv: iz vsakega sklopa en dogodek; znotraj sklopa se noben dogodek
 // ne ponovi, dokler niso na vrsti vsi (pri 100 dogodkih = 100 dni).
 function getDailyEventsForDateKey(dateKey) {
-  const dayIndex = getDayIndexFromDateKey(dateKey);
+  const v = poolVersionForDate(dateKey);
+  const pool = DAILY_POOLS[v];
+  const seedTag = v === 0 ? "" : `_V${v}`;
+  // Dnevi se štejejo od začetka nabora (pri prvem naboru = od prvega izziva)
+  const dayIndex = getDayIndexFromDateKey(dateKey) - (v === 0 ? 0 : getDayIndexFromDateKey(pool.from));
   const chosen = [];
 
   for (let eraId = 1; eraId <= 5; eraId++) {
-    const pool = SLOVENIAN_EVENTS.filter((e) => e.era === eraId).sort((a, b) =>
+    const eraPool = SLOVENIAN_EVENTS.filter((e) => e.era === eraId && eventIdNumber(e) <= pool.maxId).sort((a, b) =>
       a.id.localeCompare(b.id)
     );
-    const n = pool.length;
+    const n = eraPool.length;
     const cycle = Math.floor(dayIndex / n);
     const pos = ((dayIndex % n) + n) % n;
-    const order = getEraCycleOrder(eraId, n, cycle);
-    chosen.push(pool[order[pos]]);
+    const order = getEraCycleOrder(eraId, n, cycle, seedTag);
+    chosen.push(eraPool[order[pos]]);
   }
 
   return orderDailyEvents(dateKey, chosen);

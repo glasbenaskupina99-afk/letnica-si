@@ -4883,3 +4883,202 @@ html.touch .hint-touch { display: inline; }
     padding-top: 14px;
   }
 }
+
+.rooms-transfer {
+  margin: 0 0 16px;
+}
+.rooms-transfer .room-invite-row {
+  margin-top: 10px;
+}
+
+.report-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.report-link:hover {
+  color: var(--gold);
+}
+
+/* ==================== ŠOLSKI NAČIN (beta) ==================== */
+.school-panel {
+  margin-top: 14px;
+  padding: 20px 22px;
+}
+.beta-tag {
+  display: inline-block;
+  margin-left: 8px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--violet);
+  border: 1px solid color-mix(in srgb, var(--violet) 50%, transparent);
+  border-radius: 99px;
+  padding: 2px 8px;
+  vertical-align: middle;
+}
+.school-eras {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px;
+  margin: 14px 0 12px;
+}
+.school-era {
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.school-era:hover {
+  border-color: var(--gold-line);
+  background: var(--gold-soft);
+}
+.school-era span {
+  display: block;
+  color: var(--text-3);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.school-toggle {
+  font-size: 13px;
+  color: var(--text-2);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.projector {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: radial-gradient(80% 60% at 20% 0%, #1b2440, #060a14 70%);
+  color: #eef2f8;
+  overflow: auto;
+}
+.proj-inner {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 3vh 4vw;
+}
+.proj-head {
+  display: flex;
+  align-items: center;
+  gap: 3vw;
+  margin-bottom: 3vh;
+}
+.proj-head > div:first-child {
+  flex: 1;
+}
+.proj-brand {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2.2vw;
+}
+.proj-brand span {
+  color: #f5b942;
+}
+.proj-head h1 {
+  font-family: var(--font-display);
+  font-size: 4.2vw;
+  line-height: 1.05;
+}
+.proj-meta {
+  text-align: right;
+}
+.proj-meta b {
+  display: block;
+  font-size: 4vw;
+  color: #f5b942;
+  font-variant-numeric: tabular-nums;
+}
+.proj-meta span {
+  font-size: 1.4vw;
+  color: #a3aec2;
+}
+.proj-close {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  color: #eef2f8;
+  font-size: 1.6vw;
+  width: 3.4vw;
+  height: 3.4vw;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.proj-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 3vw;
+}
+.proj-grid h2 {
+  font-size: 1.6vw;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #a3aec2;
+  margin-bottom: 1.4vh;
+}
+.proj-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1vh;
+}
+.proj-list li {
+  display: flex;
+  align-items: center;
+  gap: 1.6vw;
+  padding: 1.4vh 1.6vw;
+  border-radius: 1vw;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 2.2vw;
+}
+.proj-list.small li {
+  font-size: 1.7vw;
+}
+.proj-list li.pending {
+  opacity: 0.55;
+}
+.proj-rank {
+  width: 3vw;
+  color: #f5b942;
+  font-weight: 800;
+}
+.proj-name {
+  flex: 1;
+  font-weight: 700;
+}
+.proj-year {
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: #fcd770;
+}
+.proj-pts {
+  color: #a3aec2;
+  font-variant-numeric: tabular-nums;
+}
+.proj-wait,
+.proj-done {
+  color: #a3aec2;
+  font-size: 0.8em;
+}
+.proj-join {
+  margin-top: 3vh;
+  font-size: 1.6vw;
+  color: #a3aec2;
+}
+.proj-join b {
+  color: #fcd770;
+}

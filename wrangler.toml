@@ -21,3 +21,5 @@ migrations_dir = "migrations"
 [vars]
 # SHA-256 ključa za zasebno stran /statistika (ključ sam ni v kodi)
 STATS_KEY_SHA256 = "871d4840210324dc2c85be2ac3e551b8467b6750ae9f1b7d8e9a3dae27e58cab"
+# SHA-256 vrednosti prijavnega piškotka za /statistika (piškotek sam ni v kodi)
+STATS_COOKIE_SHA256 = "3f0046e163916c90cd67ce03fbd8d496b2a5b6cb8b42ceedbec15e0cf498a9b7"

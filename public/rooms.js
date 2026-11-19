@@ -10,6 +10,9 @@ const CasolovRooms = (() => {
   const LAST_ROOM_KEY = "casolov_last_room";
   const SYNC_KEY = "casolov_synced_days";
   const HASH_RE = /^#soba-([A-Z0-9]{8})$/i;
+  // Prenos profila na drugo napravo: #prenos-<id>.<skrivnost>
+  const TRANSFER_RE = /^#prenos-([0-9a-f-]{36}\.[0-9a-f]{48})$/i;
+  let pendingTransfer = null;
 
   let player = readStore(PLAYER_KEY, null); // { id, name, token }
   let me = null; // { player, rooms }
@@ -141,6 +144,11 @@ const CasolovRooms = (() => {
       return;
     }
 
+    if (pendingTransfer) {
+      renderTransfer(root);
+      return;
+    }
+
     if (!player) {
       renderOnboarding(root);
       return;
@@ -215,6 +223,57 @@ const CasolovRooms = (() => {
     });
   }
 
+  // Prevzem profila z druge naprave
+  async function renderTransfer(root) {
+    const token = pendingTransfer;
+    root.innerHTML = `<div class="panel rooms-loading">Preverjam profil …</div>`;
+    let info;
+    try {
+      const res = await fetch("/api/me", { headers: { "x-casolov-player": token } });
+      info = await res.json();
+      if (!res.ok) throw new Error(info.error || "Profila ni bilo mogoče najti.");
+    } catch (err) {
+      pendingTransfer = null;
+      root.innerHTML = `<div class="panel rooms-note"><h3>Prenos profila ni uspel</h3><p>${esc(err.message)}</p>
+        <button type="button" class="btn btn-emerald" id="rooms-back-list">Nadaljuj</button></div>`;
+      $("rooms-back-list").addEventListener("click", () => render());
+      return;
+    }
+    const same = player && player.token === token;
+    root.innerHTML = `
+      <div class="panel rooms-note">
+        <h3>${same ? "Ta profil že uporabljaš" : `Prevzemi profil »${esc(info.player.name)}«?`}</h3>
+        <p>${
+          same
+            ? "Na tej napravi že igraš s tem profilom."
+            : `Na tej napravi boš igral kot <strong>${esc(info.player.name)}</strong> in videl ${info.rooms.length} ${info.rooms.length === 1 ? "sobo" : info.rooms.length === 2 ? "sobi" : info.rooms.length <= 4 ? "sobe" : "sob"}.${
+                player && !same ? ` Trenutni profil »${esc(player.name)}« bo na tej napravi zamenjan.` : ""
+              }`
+        }</p>
+        ${same ? "" : `<button type="button" class="btn btn-emerald" id="transfer-yes">Da, prevzemi profil</button>`}
+        <button type="button" class="rooms-link" id="transfer-no">${same ? "Nadaljuj" : "Prekliči"}</button>
+      </div>`;
+    const done = () => {
+      pendingTransfer = null;
+      history.replaceState(null, "", location.pathname + location.search);
+      render();
+    };
+    $("transfer-no").addEventListener("click", done);
+    if (!same)
+      $("transfer-yes").addEventListener("click", () => {
+        player = { id: info.player.id, name: info.player.name, token };
+        writeStore(PLAYER_KEY, player);
+        writeStore(SYNC_KEY, []);
+        me = null;
+        syncLocalResults();
+        done();
+      });
+  }
+
+  function transferLink() {
+    return `${location.origin}${location.pathname}#prenos-${player.token}`;
+  }
+
   async function renderList(root) {
     root.innerHTML = `<div class="panel rooms-loading">Nalagam tvoje sobe …</div>`;
     try {
@@ -242,6 +301,15 @@ const CasolovRooms = (() => {
       <div class="rooms-me">
         Igraš kot <strong id="rooms-me-name">${esc(player.name)}</strong>
         <button type="button" class="rooms-link" id="rooms-rename">Spremeni vzdevek</button>
+        <button type="button" class="rooms-link" id="rooms-transfer">Igraj na drugi napravi</button>
+      </div>
+      <div class="panel rooms-transfer" id="rooms-transfer-box" hidden>
+        <h3 class="rooms-h">Prenos profila na telefon ali računalnik</h3>
+        <p class="rooms-fine">Odpri to povezavo na drugi napravi in tam boš igral kot <strong>${esc(player.name)}</strong> z istimi sobami. Pošlji jo samo sebi — kdor jo ima, lahko igra pod tvojim imenom.</p>
+        <div class="room-invite-row">
+          <input id="rooms-transfer-link" class="rooms-input" readonly value="${esc(transferLink())}" />
+          <button type="button" class="btn btn-emerald" id="rooms-transfer-copy"><svg class="ic"><use href="#i-copy" /></svg><span>Kopiraj</span></button>
+        </div>
       </div>
       <form class="rooms-rename" id="rooms-rename-form" hidden novalidate>
         <label for="rooms-rename-input" class="sr-only">Nov vzdevek</label>
@@ -278,6 +346,21 @@ const CasolovRooms = (() => {
         render();
       })
     );
+
+    $("rooms-transfer").addEventListener("click", () => {
+      const box = $("rooms-transfer-box");
+      box.hidden = !box.hidden;
+    });
+    $("rooms-transfer-copy").addEventListener("click", async () => {
+      const input = $("rooms-transfer-link");
+      try {
+        await navigator.clipboard.writeText(input.value);
+      } catch {
+        input.select();
+        document.execCommand && document.execCommand("copy");
+      }
+      $("rooms-transfer-copy").querySelector("span").textContent = "Kopirano";
+    });
 
     $("rooms-rename").addEventListener("click", () => {
       const f = $("rooms-rename-form");
@@ -397,8 +480,8 @@ const CasolovRooms = (() => {
     const monthRange = (fromKey) => `${monthName(fromKey)} ${fromKey.slice(0, 4)}`;
 
     const periods = {
-      week: { label: "Ta teden", range: `${shortDate(board.weekFrom)} – ${shortDate(date)}`, rows: board.week },
-      month: { label: "Ta mesec", range: `${monthRange(board.monthFrom)}, do ${shortDate(date)}`, rows: board.month }
+      week: { label: "Ta teden", range: board.standingsTo < board.weekFrom ? "teden se šele začenja" : `${shortDate(board.weekFrom)} – ${shortDate(board.standingsTo || date)}`, rows: board.week },
+      month: { label: "Ta mesec", range: board.standingsTo < board.monthFrom ? "mesec se šele začenja" : `${monthRange(board.monthFrom)}, do ${shortDate(board.standingsTo || date)}`, rows: board.month }
     };
     if (!periods[standingsTab]) standingsTab = "week";
     const activePeriod = periods[standingsTab];
@@ -433,6 +516,7 @@ const CasolovRooms = (() => {
             ${navigator.share ? `<button type="button" class="btn-secondary-action" id="room-share"><svg class="ic"><use href="#i-share" /></svg>Deli</button>` : ""}
           </div>
           <p class="rooms-fine">Koda sobe: <strong class="code">${esc(board.room.code)}</strong></p>
+          ${window.CASOLOV_OWNER ? `<button type="button" class="btn-secondary-action" id="room-projector">Prikaz za projektor</button>` : ""}
         </div>
       </section>
 
@@ -475,7 +559,7 @@ const CasolovRooms = (() => {
             <tbody>${tableRows(activePeriod.rows)}</tbody>
           </table>
         </div>
-        <p class="rooms-fine">Zmaga, kdo zbere največ točk v koledarskem tednu (pon–ned) oziroma mesecu. Vsak odigran dan šteje.</p>
+        <p class="rooms-fine">Zmaga, kdo zbere največ točk v koledarskem tednu (pon–ned) oziroma mesecu. ${board.viewerPlayed ? "" : "Izbrani dan se v lestvico prišteje, ko ga odigraš sam. "}Vsak odigran dan šteje.</p>
       </section>
 
       <div class="room-foot">
@@ -493,6 +577,8 @@ const CasolovRooms = (() => {
       current = { code: null, date: null };
       render();
     });
+    if ($("room-projector")) $("room-projector").addEventListener("click", () => openProjector(board.room.code, date));
+
     root.querySelectorAll(".room-tab").forEach((btn) =>
       btn.addEventListener("click", () => {
         standingsTab = btn.dataset.period;
@@ -602,6 +688,70 @@ const CasolovRooms = (() => {
     box.dataset.date = dateKey;
   }
 
+  // --------------------------------------------------------- projektor (šolski način)
+  let projectorTimer = null;
+
+  async function openProjector(code, date) {
+    let el = $("room-projector-view");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "room-projector-view";
+      el.className = "projector";
+      document.body.appendChild(el);
+    }
+    const close = () => {
+      clearInterval(projectorTimer);
+      el.remove();
+      document.removeEventListener("keydown", onKey);
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("keydown", onKey);
+
+    async function draw() {
+      let b;
+      try {
+        b = await api(`/rooms/${code}?date=${date}`);
+      } catch (err) {
+        el.innerHTML = `<div class="proj-inner"><h1>Sobe ni bilo mogoče naložiti</h1><p>${esc(err.message)}</p></div>`;
+        return;
+      }
+      const played = b.day.filter((r) => r.played).length;
+      const rows = b.day
+        .map((r, i) => {
+          const detail = !r.played ? `<span class="proj-wait">še igra …</span>` : b.viewerPlayed ? `<span class="proj-year">${r.reachedYear}</span><span class="proj-pts">${r.points} tč</span>` : `<span class="proj-done">✓ odigrano</span>`;
+          return `<li class="${r.played ? "" : "pending"}"><span class="proj-rank">${r.played && b.viewerPlayed ? i + 1 + "." : ""}</span><span class="proj-name">${esc(r.name)}</span>${detail}</li>`;
+        })
+        .join("");
+      const week = b.week
+        .filter((r) => r.days > 0)
+        .slice(0, 8)
+        .map((r, i) => `<li><span class="proj-rank">${i + 1}.</span><span class="proj-name">${esc(r.name)}</span><span class="proj-pts">${r.points} tč</span></li>`)
+        .join("");
+      el.innerHTML = `
+        <div class="proj-inner">
+          <header class="proj-head">
+            <div><div class="proj-brand">Časo<span>lov</span></div><h1>${esc(b.room.name)}</h1></div>
+            <div class="proj-meta"><b>${played} / ${b.day.length}</b><span>odigralo danes</span></div>
+            <button type="button" class="proj-close" id="proj-close" aria-label="Zapri">✕</button>
+          </header>
+          <div class="proj-grid">
+            <section><h2>Danes${b.viewerPlayed ? "" : " · rezultati po tvoji igri"}</h2><ol class="proj-list">${rows}</ol></section>
+            <section><h2>Ta teden</h2><ol class="proj-list small">${week || "<li><span class='proj-name'>Še ni rezultatov</span></li>"}</ol>
+              <p class="proj-join">Vstopi: <b>casolov.si</b> · koda sobe <b>${esc(b.room.code)}</b></p></section>
+          </div>
+        </div>`;
+      $("proj-close").addEventListener("click", close);
+    }
+
+    await draw();
+    clearInterval(projectorTimer);
+    projectorTimer = setInterval(draw, 20000);
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  }
+
   // --------------------------------------------------------- povabila (#)
   function clearHash() {
     if (HASH_RE.test(location.hash)) {
@@ -610,6 +760,13 @@ const CasolovRooms = (() => {
   }
 
   function handleHash() {
+    const t = location.hash.match(TRANSFER_RE);
+    if (t) {
+      pendingTransfer = t[1].toLowerCase();
+      current = { code: null, date: null };
+      show();
+      return true;
+    }
     const m = location.hash.match(HASH_RE);
     if (!m) return false;
     pendingInvite = m[1].toUpperCase();

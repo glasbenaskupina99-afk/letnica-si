@@ -8,7 +8,7 @@
 import "../public/events.js";
 import "../public/core.js";
 import { archiveIndex, archiveDay, sitemap } from "./pages.js";
-import { recordPlay, statsPage } from "./stats.js";
+import { recordPlay, statsRoute, rateLimit, isStatsOwner } from "./stats.js";
 
 const Core = globalThis.CasolovCore;
 
@@ -122,6 +122,7 @@ async function getPlayer(request, env, required = true) {
 }
 
 async function createPlayer(request, env) {
+  await rateLimit(env, request, "player", HttpError);
   const body = await readJson(request);
   const name = cleanName(body.name, LIMITS.nameMax, "Vzdevek");
   const id = crypto.randomUUID();
@@ -167,6 +168,7 @@ async function countRoomsOf(env, playerId) {
 
 async function createRoom(request, env) {
   const player = await getPlayer(request, env);
+  await rateLimit(env, request, "room", HttpError);
   const body = await readJson(request);
   const name = cleanName(body.name, LIMITS.roomNameMax, "Ime sobe");
   if ((await countRoomsOf(env, player.id)) >= LIMITS.roomsPerPlayer) {
@@ -203,6 +205,7 @@ async function previewRoom(env, code) {
 
 async function joinRoom(request, env, code) {
   const player = await getPlayer(request, env);
+  await rateLimit(env, request, "join", HttpError);
   const room = await findRoom(env, code);
   const already = await env.DB.prepare("SELECT 1 FROM room_members WHERE room_code = ? AND player_id = ?").bind(code, player.id).first();
   if (!already) {
@@ -322,9 +325,14 @@ async function roomBoard(request, env, code, url) {
     .bind(code, date)
     .all();
 
+  // Dokler gledalec dneva ne odigra sam, tekoča lestvica ne vključuje tega dne
+  // (sicer bi iz seštevka razbral današnje točke prijateljev).
+  const viewerPlayedDay = !!(await env.DB.prepare("SELECT 1 FROM results WHERE player_id = ? AND date_key = ?").bind(player.id, date).first());
+  const standingsTo = viewerPlayedDay ? date : shiftDateKey(date, -1);
+
   const [weekT, monthT, prevWeekT, prevMonthT] = await Promise.all([
-    periodTotals(env, code, weekFrom, date),
-    periodTotals(env, code, monthFrom, date),
+    periodTotals(env, code, weekFrom, standingsTo),
+    periodTotals(env, code, monthFrom, standingsTo),
     periodTotals(env, code, prevWeekFrom, prevWeekTo),
     periodTotals(env, code, prevMonthFrom, prevMonthTo)
   ]);
@@ -352,6 +360,7 @@ async function roomBoard(request, env, code, url) {
     date,
     weekFrom,
     monthFrom,
+    standingsTo,
     viewerPlayed,
     day,
     week,
@@ -414,6 +423,8 @@ async function handleApi(request, env, url) {
   if (path === "/api/rooms" && method === "POST") return createRoom(request, env);
   if (path === "/api/results" && method === "POST") return submitResult(request, env);
   if (path === "/api/play" && method === "POST") return recordPlay(request, env, Core, json, HttpError);
+  // Šolski način (beta) vidi samo lastnik, prijavljen v /statistika
+  if (path === "/api/beta" && method === "GET") return json({ owner: await isStatsOwner(request, env) });
   if (roomMatch) {
     const code = roomMatch[1].toUpperCase();
     const action = roomMatch[2] || "";
@@ -436,7 +447,7 @@ export default {
       if (path === "/sitemap.xml") return sitemap(Core);
       if (path === "/statistika") {
         try {
-          return await statsPage(env, url, Core);
+          return await statsRoute(request, env, url, Core, HttpError);
         } catch (err) {
           console.error(err);
           return new Response("Napaka pri branju statistike.", { status: 500 });
