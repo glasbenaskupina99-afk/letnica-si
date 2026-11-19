@@ -436,7 +436,7 @@ export default {
       if (path === "/sitemap.xml") return sitemap(Core);
       if (path === "/statistika") {
         try {
-          return await statsPage(env, url);
+          return await statsPage(env, url, Core);
         } catch (err) {
           console.error(err);
           return new Response("Napaka pri branju statistike.", { status: 500 });

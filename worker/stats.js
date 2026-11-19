@@ -104,7 +104,7 @@ export async function recordPlay(request, env, Core, json, HttpError) {
 }
 
 // ---------------------------------------------------------------- zasebna stran
-export async function statsPage(env, url) {
+export async function statsPage(env, url, Core) {
   const key = url.searchParams.get("k") || "";
   const ok = env.STATS_KEY_SHA256 && key && (await sha256(key)) === env.STATS_KEY_SHA256;
   if (!ok) {
@@ -127,6 +127,50 @@ export async function statsPage(env, url) {
       .bind(from)
       .all()
   ).results;
+
+  // Danes: vse igre današnjega dne (po slovenskem času)
+  const todayRows = (
+    await env.DB.prepare("SELECT mode, challenge_date, visitor, reached_year, points, exact_count, answers, created_at FROM plays WHERE day = ?")
+      .bind(today)
+      .all()
+  ).results;
+  const hourFmt = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Ljubljana", hour: "2-digit", hour12: false });
+  const byHour = Array(24).fill(0);
+  for (const r of todayRows) byHour[Number(hourFmt.format(new Date(r.created_at))) % 24]++;
+  const todayDaily = todayRows.filter((r) => r.mode === "daily" && r.challenge_date === today);
+  const tStats = {
+    games: todayRows.length,
+    players: new Set(todayRows.map((r) => r.visitor)).size,
+    daily: todayRows.filter((r) => r.mode === "daily").length,
+    free: todayRows.filter((r) => r.mode === "freeplay").length,
+    avgYear: todayRows.length ? Math.round(todayRows.reduce((a, r) => a + r.reached_year, 0) / todayRows.length) : 0,
+    best: todayRows.length ? Math.max(...todayRows.map((r) => r.reached_year)) : 0,
+    landings: todayRows.filter((r) => r.reached_year === 2026).length
+  };
+  // Današnji izziv po vprašanjih
+  const todayEvents = Core.getDailyEventsForDateKey(today);
+  const perQ = todayEvents.map((ev) => {
+    let n = 0, sum = 0, exact = 0, timeouts = 0;
+    for (const r of todayDaily) {
+      let list;
+      try {
+        list = JSON.parse(r.answers);
+      } catch {
+        continue;
+      }
+      const a = list.find((x) => x.e === ev.id);
+      if (!a) continue;
+      n++;
+      if (a.d === null) timeouts++;
+      else {
+        sum += a.d;
+        if (a.d === 0) exact++;
+      }
+    }
+    return { ev, n, avg: n > timeouts ? sum / (n - timeouts) : null, exactPct: n ? Math.round((exact / n) * 100) : 0, timeouts };
+  });
+  const dayNum = Core.getDayNumberFromDateKey(today);
+  const maxHour = Math.max(1, ...byHour);
 
   const totals = await env.DB.prepare(
     `SELECT COUNT(*) AS games, SUM(mode = 'daily') AS daily, SUM(mode = 'freeplay') AS free,
@@ -197,11 +241,48 @@ export async function statsPage(env, url) {
   td:first-child { white-space: normal; }
   th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #8592a8; }
   .r { text-align: right; }
+  .today { border: 1px solid rgba(245,185,66,.4); background: rgba(245,185,66,.07); border-radius: 18px; padding: 18px 18px 8px; margin-top: 20px; }
+  .today h2 { margin-top: 0; }
+  .today .card { background: rgba(6,10,20,.55); }
+  .hours { display: grid; grid-template-columns: repeat(24, 1fr); gap: 3px; align-items: end; height: 90px; margin: 14px 0 4px; }
+  .hours div { background: #f5b942; border-radius: 3px 3px 0 0; min-height: 2px; position: relative; }
+  .hours div.zero { background: rgba(160,174,200,.18); }
+  .hlabels { display: grid; grid-template-columns: repeat(24, 1fr); gap: 3px; font-size: 10px; color: #8592a8; text-align: center; }
 </style></head>
 <body><main>
   <h1>Časolov · <span>statistika iger</span></h1>
   <p class="muted">Danes je ${fmt(today)}. »Igralci« so različni obiskovalci na dan (iz IP-naslova in dnevno spremenljive vrednosti; IP-naslovi se ne shranjujejo). Isti igralec je na različne dni štet ločeno.</p>
 
+  <section class="today">
+    <h2>Danes · ${fmt(today)} · izziv #${dayNum}</h2>
+    <div class="cards" style="margin-top:6px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr))">
+      <div class="card"><b>${tStats.players}</b><span>različnih igralcev</span></div>
+      <div class="card"><b>${tStats.games}</b><span>odigranih iger</span></div>
+      <div class="card"><b>${tStats.daily}</b><span>dnevnih izzivov</span></div>
+      <div class="card"><b>${tStats.free}</b><span>prostih iger</span></div>
+      <div class="card"><b>${tStats.avgYear}</b><span>povprečno leto</span></div>
+      <div class="card"><b>${tStats.best}</b><span>najdlje (${tStats.landings}× v 2026)</span></div>
+    </div>
+
+    <h2 style="font-size:14px;margin-top:22px">Igre po urah</h2>
+    <div class="hours">${byHour
+      .map((c, h) => `<div class="${c ? "" : "zero"}" style="height:${c ? Math.max(6, (c / maxHour) * 100) : 2}%" title="${h}:00 — ${c} iger"></div>`)
+      .join("")}</div>
+    <div class="hlabels">${byHour.map((_, h) => `<span>${h % 3 === 0 ? h : ""}</span>`).join("")}</div>
+
+    <h2 style="font-size:14px;margin-top:22px">Današnji izziv po vprašanjih · odigran ${todayDaily.length}-krat</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>#</th><th>Dogodek</th><th>Leto</th><th class="r">Povp. odstopanje</th><th class="r">Točno</th><th class="r">Potekel čas</th></tr></thead>
+      <tbody>${perQ
+        .map(
+          (q, i) =>
+            `<tr><td>${i + 1}</td><td>${esc(q.ev.title)}</td><td>${q.ev.year}</td><td class="r">${q.avg === null ? "–" : q.avg.toFixed(1) + " let"}</td><td class="r">${q.n ? q.exactPct + " %" : "–"}</td><td class="r">${q.timeouts}</td></tr>`
+        )
+        .join("")}</tbody>
+    </table></div>
+  </section>
+
+  <h2>Skupaj</h2>
   <div class="cards">
     <div class="card"><b>${n(totals.games)}</b><span>vseh odigranih iger</span></div>
     <div class="card"><b>${n(totals.daily)}</b><span>dnevnih izzivov</span></div>
