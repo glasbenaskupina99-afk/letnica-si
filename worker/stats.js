@@ -11,6 +11,9 @@
 
 import { todayKeyLjubljana } from "./pages.js";
 
+// Dan, ko se je začelo štetje vseh iger
+const COUNTING_FROM = "2026-11-19";
+
 const EVENTS_BY_ID = new Map(globalThis.SLOVENIAN_EVENTS.map((e) => [e.id, e]));
 
 function esc(text) {
@@ -307,7 +310,7 @@ export async function statsPage(env, url, Core) {
     <div class="card"><b>${n(totals.avg_year)}</b><span>povprečno doseženo leto</span></div>
     <div class="card"><b>${n(totals.landings)}</b><span>pristankov v letu 2026</span></div>
   </div>
-  <p class="muted">Štetje vseh iger teče od ${totals.first_day ? fmt(totals.first_day) : "prve odigrane igre po 19. 11. 2026"}. Za dneve prej so znane le igre igralcev v sobah (zadnji stolpec spodaj); obisk strani za vse dni vidiš v Cloudflaru (casolov.si → Analytics).</p>
+  <p class="muted">Štetje vseh iger teče od ${fmt(COUNTING_FROM)}. Za dneve prej so znane le igre igralcev v sobah (zadnji stolpec spodaj); obisk strani za vse dni vidiš v Cloudflaru (casolov.si → Analytics).</p>
 
   <h2>Zadnjih 30 dni</h2>
   <div class="scroll"><table>
@@ -316,7 +319,7 @@ export async function statsPage(env, url, Core) {
       .map((day) => {
         const d = playsByDay.get(day) || {};
         const r = roomByDay.get(day);
-        const before = !totals.first_day || day < totals.first_day;
+        const before = day < COUNTING_FROM;
         return `<tr><td>${fmt(day)}${before ? ' <span class="muted">· pred štetjem</span>' : ""}</td><td class="r"><b>${before ? "–" : n(d.players)}</b></td><td class="r">${before ? "–" : n(d.daily)}</td><td class="r">${before ? "–" : n(d.free)}</td><td class="r">${before ? "–" : n(d.avg_year)}</td><td class="r">${before ? "–" : n(d.landings)}</td><td class="r">${r ? `${r.games} (${r.players.size} ${r.players.size === 1 ? "igralec" : r.players.size === 2 ? "igralca" : r.players.size <= 4 ? "igralci" : "igralcev"})` : 0}</td></tr>`;
       })
       .join("")}</tbody>
