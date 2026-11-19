@@ -128,6 +128,23 @@ export async function statsPage(env, url, Core) {
       .all()
   ).results;
 
+  // Igre v sobah (shranjene že od začetka igre, 18. 11. 2026) — za dneve pred štetjem
+  const dayFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Ljubljana", year: "numeric", month: "2-digit", day: "2-digit" });
+  const roomRows = (await env.DB.prepare("SELECT player_id, created_at, reached_year FROM results WHERE created_at >= ?").bind(Date.parse(from + "T00:00:00Z") - 86400000).all()).results;
+  const roomByDay = new Map();
+  for (const r of roomRows) {
+    const d = dayFmt.format(new Date(r.created_at));
+    if (d < from) continue;
+    const x = roomByDay.get(d) || { games: 0, players: new Set() };
+    x.games++;
+    x.players.add(r.player_id);
+    roomByDay.set(d, x);
+  }
+  const playsByDay = new Map(daily.map((d) => [d.day, d]));
+  const epochKey = Core.formatDateKey(Core.EPOCH_START);
+  const allDays = [];
+  for (let k = today; k >= from && k >= epochKey; k = shiftKey(k, -1)) allDays.push(k);
+
   // Danes: vse igre današnjega dne (po slovenskem času)
   const todayRows = (
     await env.DB.prepare("SELECT mode, challenge_date, visitor, reached_year, points, exact_count, answers, created_at FROM plays WHERE day = ?")
@@ -290,21 +307,19 @@ export async function statsPage(env, url, Core) {
     <div class="card"><b>${n(totals.avg_year)}</b><span>povprečno doseženo leto</span></div>
     <div class="card"><b>${n(totals.landings)}</b><span>pristankov v letu 2026</span></div>
   </div>
-  <p class="muted">Štetje teče od ${totals.first_day ? fmt(totals.first_day) : "prve odigrane igre"}.</p>
+  <p class="muted">Štetje vseh iger teče od ${totals.first_day ? fmt(totals.first_day) : "prve odigrane igre po 19. 11. 2026"}. Za dneve prej so znane le igre igralcev v sobah (zadnji stolpec spodaj); obisk strani za vse dni vidiš v Cloudflaru (casolov.si → Analytics).</p>
 
   <h2>Zadnjih 30 dni</h2>
   <div class="scroll"><table>
-    <thead><tr><th>Dan</th><th class="r">Igralci</th><th class="r">Dnevni izziv</th><th class="r">Proste igre</th><th class="r">Povp. leto</th><th class="r">Pristanki 2026</th></tr></thead>
-    <tbody>${
-      daily.length
-        ? daily
-            .map(
-              (d) =>
-                `<tr><td>${fmt(d.day)}</td><td class="r"><b>${n(d.players)}</b></td><td class="r">${n(d.daily)}</td><td class="r">${n(d.free)}</td><td class="r">${n(d.avg_year)}</td><td class="r">${n(d.landings)}</td></tr>`
-            )
-            .join("")
-        : `<tr><td colspan="6" class="muted">Še ni odigranih iger.</td></tr>`
-    }</tbody>
+    <thead><tr><th>Dan</th><th class="r">Igralci</th><th class="r">Dnevni izziv</th><th class="r">Proste igre</th><th class="r">Povp. leto</th><th class="r">Pristanki 2026</th><th class="r">Igre v sobah</th></tr></thead>
+    <tbody>${allDays
+      .map((day) => {
+        const d = playsByDay.get(day) || {};
+        const r = roomByDay.get(day);
+        const before = !totals.first_day || day < totals.first_day;
+        return `<tr><td>${fmt(day)}${before ? ' <span class="muted">· pred štetjem</span>' : ""}</td><td class="r"><b>${before ? "–" : n(d.players)}</b></td><td class="r">${before ? "–" : n(d.daily)}</td><td class="r">${before ? "–" : n(d.free)}</td><td class="r">${before ? "–" : n(d.avg_year)}</td><td class="r">${before ? "–" : n(d.landings)}</td><td class="r">${r ? `${r.games} (${r.players.size} ${r.players.size === 1 ? "igralec" : r.players.size === 2 ? "igralca" : r.players.size <= 4 ? "igralci" : "igralcev"})` : 0}</td></tr>`;
+      })
+      .join("")}</tbody>
   </table></div>
 
   <h2>Najtežji dogodki (zadnjih 30 dni)</h2>
