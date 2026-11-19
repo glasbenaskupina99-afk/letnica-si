@@ -504,7 +504,6 @@ function renderCurrentRound() {
   document.getElementById("summary-panel").classList.remove("visible");
 
   document.body.dataset.era = String(ev.era);
-  document.getElementById("event-era-badge").textContent = `Sklop ${eraObj.code} · ${eraObj.rangeText}`;
   document.getElementById("event-category-badge").textContent = ev.category;
   document.getElementById("event-region-badge").textContent = ev.region;
   document.getElementById("round-counter-badge").textContent = `Vprašanje ${state.currentRound + 1} / 5`;
@@ -564,7 +563,6 @@ function configureSliderForEra(eraObj) {
     })
     .join("");
 
-  document.getElementById("guess-range-note").textContent = `Obdobje ${min} – ${max}`;
   updateSliderBubble();
 }
 
