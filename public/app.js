@@ -876,8 +876,10 @@ function finishGameSession() {
   const reachedYear = computeJourneyYearFromGuesses(state.guesses);
   state.journeyYear = reachedYear;
 
+  let isFreshDaily = false;
   if (state.mode === "daily" && state.activeDateKey) {
     const alreadySaved = state.dailyHistory[state.activeDateKey];
+    isFreshDaily = !alreadySaved;
     if (!alreadySaved) {
       state.dailyHistory[state.activeDateKey] = {
         score: totalScore,
@@ -909,6 +911,7 @@ function finishGameSession() {
     state.freeplayTotal += 1;
     savePersistedState();
   }
+  reportPlayAnonymously(isFreshDaily);
   const freshAchievements = checkAchievements(state.guesses);
 
   const roomsBox = document.getElementById("summary-rooms");
@@ -925,6 +928,22 @@ function finishGameSession() {
     renderSummary();
     announceAchievements(freshAchievements);
   });
+}
+
+// Anonimna statistika: koliko iger je odigranih (brez osebnih podatkov)
+function reportPlayAnonymously(isFreshDaily) {
+  if (!/^https?:$/.test(location.protocol)) return;
+  if (state.mode === "daily" && !isFreshDaily) return;
+  const body = JSON.stringify({
+    mode: state.mode,
+    dateKey: state.mode === "daily" ? state.activeDateKey : undefined,
+    answers: state.guesses.map((g) => ({ e: g.eventId, y: g.timedOut ? null : g.guessYear }))
+  });
+  try {
+    fetch("/api/play", { method: "POST", headers: { "content-type": "application/json" }, body, keepalive: true }).catch(() => {});
+  } catch {
+    /* statistika ni pomembna za igro */
+  }
 }
 
 // ============================================================================

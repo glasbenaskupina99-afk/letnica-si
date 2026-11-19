@@ -8,6 +8,7 @@
 import "../public/events.js";
 import "../public/core.js";
 import { archiveIndex, archiveDay, sitemap } from "./pages.js";
+import { recordPlay, statsPage } from "./stats.js";
 
 const Core = globalThis.CasolovCore;
 
@@ -412,6 +413,7 @@ async function handleApi(request, env, url) {
   if (path === "/api/me" && method === "PATCH") return renameMe(request, env);
   if (path === "/api/rooms" && method === "POST") return createRoom(request, env);
   if (path === "/api/results" && method === "POST") return submitResult(request, env);
+  if (path === "/api/play" && method === "POST") return recordPlay(request, env, Core, json, HttpError);
   if (roomMatch) {
     const code = roomMatch[1].toUpperCase();
     const action = roomMatch[2] || "";
@@ -432,6 +434,14 @@ export default {
       const day = path.match(/^\/arhiv\/(\d{1,5})$/);
       if (day) return archiveDay(Core, Number(day[1]));
       if (path === "/sitemap.xml") return sitemap(Core);
+      if (path === "/statistika") {
+        try {
+          return await statsPage(env, url);
+        } catch (err) {
+          console.error(err);
+          return new Response("Napaka pri branju statistike.", { status: 500 });
+        }
+      }
       return env.ASSETS.fetch(request);
     }
     try {

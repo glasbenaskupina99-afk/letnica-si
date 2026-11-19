@@ -10,10 +10,14 @@ directory = "./public"
 binding = "ASSETS"
 # Skozi Worker gre le API sob; statične datoteke streže Cloudflare neposredno
 # (brezplačno in brez omejitve, ne štejejo v dnevno omejitev zahtev)
-run_worker_first = ["/api/*", "/arhiv", "/arhiv/*", "/sitemap.xml"]
+run_worker_first = ["/api/*", "/arhiv", "/arhiv/*", "/sitemap.xml", "/statistika"]
 
 [[d1_databases]]
 binding = "DB"
 database_name = "casolov"
 database_id = "b42037e2-38fc-4587-af32-50b6adfbd8bf"
 migrations_dir = "migrations"
+
+[vars]
+# SHA-256 ključa za zasebno stran /statistika (ključ sam ni v kodi)
+STATS_KEY_SHA256 = "871d4840210324dc2c85be2ac3e551b8467b6750ae9f1b7d8e9a3dae27e58cab"
