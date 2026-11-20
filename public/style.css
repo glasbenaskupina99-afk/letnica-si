@@ -5082,3 +5082,182 @@ html.touch .hint-touch { display: inline; }
 .proj-join b {
   color: #fcd770;
 }
+
+/* ==================== TELEFON: vse vprašanje na enem zaslonu ====================
+   Velja samo za ozke zaslone; računalnik ostane nespremenjen. */
+@media (max-width: 640px) {
+  #game-view .journey-bar {
+    display: none;
+  }
+  #game-view .eraly-canvas-Viewport {
+    height: 150px;
+  }
+  #game-view .eraly-stage-card {
+    margin-bottom: 8px;
+  }
+
+  /* Kartica z vprašanjem: brez oznak, ura v vrstici z »Vprašanje 1 / 5« */
+  #question-event-card {
+    position: relative;
+    padding: 12px 16px 14px;
+    margin-bottom: 8px;
+  }
+  #question-event-card .timer-bar-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    padding: 0 0 8px;
+  }
+  #question-event-card .timer-chip {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 4px 10px;
+  }
+  #question-event-card .timer-progress-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  #question-event-card .event-meta {
+    position: absolute;
+    top: 18px;
+    left: 16px;
+    margin: 0;
+  }
+  #question-event-card .meta-badges {
+    display: none;
+  }
+  #question-event-card .event-title {
+    font-size: 20px;
+    line-height: 1.18;
+    margin: 2px 0 6px;
+  }
+  #question-event-card .event-prompt {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  /* Vnos: letnica in Potrdi v eni vrstici, drsnik pod njima */
+  #guess-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    grid-template-areas:
+      "dial btn"
+      "slider slider";
+    gap: 10px 10px;
+    padding: 12px 14px 6px;
+  }
+  #guess-panel .guess-label-row,
+  #guess-panel .guess-hint {
+    display: none;
+  }
+  #guess-panel .year-dial {
+    grid-area: dial;
+    margin: 0;
+  }
+  #guess-panel .year-input {
+    height: 56px;
+    max-width: none;
+    font-size: 34px;
+    border-radius: var(--r-md);
+  }
+  #guess-panel .btn-submit-year {
+    grid-area: btn;
+    height: 56px;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    gap: 8px;
+  }
+  #guess-panel .timeline-assist {
+    grid-area: slider;
+    margin: 0;
+  }
+
+  /* Po odgovoru: strnjen rezultat, opis vprašanja in oznaka kroga skrita */
+  #active-round-area:has(.round-result.visible) .event-prompt,
+  #active-round-area:has(.round-result.visible) .event-meta,
+  #active-round-area:has(.round-result.visible) .timer-bar-card {
+    display: none;
+  }
+  #active-round-area:has(.round-result.visible) #question-event-card .event-title {
+    margin: 0;
+  }
+  .round-result .jsb-sub,
+  .round-result .diff-banner {
+    display: none;
+  }
+  .round-result {
+    padding: 14px 14px 16px;
+    margin-top: 0;
+  }
+  .round-result .visual-timeline-compare,
+  .round-result .vt-legend {
+    display: none !important;
+  }
+  .round-result .journey-step-banner {
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    gap: 10px;
+  }
+  .round-result .jsb-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+  }
+  .round-result .jsb-title {
+    font-size: 15px;
+  }
+  .round-result .jsb-sub {
+    font-size: 12px;
+  }
+  .round-result .result-top-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .round-result .result-stat-box {
+    grid-column: auto !important;
+    padding: 8px 4px;
+  }
+  .round-result .result-stat-label {
+    font-size: 9px;
+    letter-spacing: 0.04em;
+  }
+  .round-result .result-stat-val {
+    font-size: 22px;
+  }
+  .round-result .result-stat-val.points-earned {
+    font-size: 14px;
+    padding-top: 3px;
+  }
+  .round-result .diff-banner {
+    font-size: 12.5px;
+    padding: 7px 10px;
+    margin-bottom: 8px;
+  }
+  .round-result .explanation-card {
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .round-result .explanation-card p {
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+  .round-result .btn-next-round {
+    height: 50px;
+  }
+}
+
+@media (max-width: 640px) and (max-height: 700px) {
+  #game-view .eraly-canvas-Viewport {
+    height: 120px;
+  }
+}
+@media (max-width: 400px) {
+  #guess-panel .btn-submit-year .ic {
+    display: none;
+  }
+  #guess-panel .btn-submit-year {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+}
